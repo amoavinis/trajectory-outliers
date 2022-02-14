@@ -1,4 +1,4 @@
-from STO.STO import STO
+from STO import STO
 
 DATA_PREFIX = "Datasets/Geolife Trajectories 1.3/Data/"
 CELLS_PER_DIMENSION = 1000

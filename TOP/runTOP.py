@@ -1,5 +1,5 @@
-from TOP.data_preprocess import Preprocessor
-from TOP.TOP import TOP
+from data_preprocess import Preprocessor
+from TOP import TOP
 
 DATA_PREFIX = "Datasets/Geolife Trajectories 1.3/Data/"
 CELLS_PER_DIMENSION = 1000
