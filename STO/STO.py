@@ -294,7 +294,6 @@ class STO:
         self.index_transitions()
         self.calculate_all_min_distorts()
         self.cluster_groups()
-        print(self.labels_indexed)
 
     def predict(self, X):
         labels = []
