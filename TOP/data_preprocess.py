@@ -1,5 +1,6 @@
 import os
 from sklearn.preprocessing import MinMaxScaler
+import tqdm
 
 class Preprocessor:
     def __init__(self, data_path, cells_per_dim, minSup, seqGap):
@@ -135,13 +136,18 @@ class Preprocessor:
 
     def preprocess(self):
         self.create_trajectories()
+        print("Created trajectories")
         self.take_points()
+        print("Took points")
         self.fit_scaler_and_transform_trajectories()
+        print("Scaled trajectories")
         self.trajectories_to_grid()
+        print("Grid created")
         #self.all_trajectories = [['a', 'b', 'c', 'd', 'a', 'b', 'c', 'a', 'c', 'b', 'e', 'a', 'c']]
-        for i in range(len(self.all_trajectories)):
+        for i in tqdm(range(len(self.all_trajectories))):
             for e in self.all_trajectories[i]:
                 self.counts_of_events = self.add_to_counts(self.counts_of_events, e)
         self.find_freq_events()
+        print("Found frequent events")
         self.create_search_spaces()
-        #print(self.search_spaces)
+        print("Created search spaces")
