@@ -1,5 +1,5 @@
 import os
-from sklearn.preprocessing import MinMaxScaler
+from CustomScaler import Scaler
 import tqdm
 
 class Preprocessor:
@@ -10,7 +10,7 @@ class Preprocessor:
         self.seqGap = seqGap
         self.all_trajectories = []
         self.all_points = []
-        self.scaler = MinMaxScaler()
+        self.scaler = Scaler()
         self.counts_of_events = dict()
         self.freq_events = set()
         self.search_spaces = dict()
