@@ -117,7 +117,7 @@ class Preprocessor:
         return subsequences
         
     def create_search_spaces(self):
-        for traj in self.all_trajectories:
+        for traj in tqdm.tqdm(self.all_trajectories):
             for e in set(traj):
                 indices_ = self.find_all(traj, e)
                 if e not in self.freq_events:
