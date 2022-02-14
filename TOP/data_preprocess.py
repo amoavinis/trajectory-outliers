@@ -144,7 +144,7 @@ class Preprocessor:
         self.trajectories_to_grid()
         print("Grid created")
         #self.all_trajectories = [['a', 'b', 'c', 'd', 'a', 'b', 'c', 'a', 'c', 'b', 'e', 'a', 'c']]
-        for i in tqdm(range(len(self.all_trajectories))):
+        for i in tqdm.tqdm(range(len(self.all_trajectories))):
             for e in self.all_trajectories[i]:
                 self.counts_of_events = self.add_to_counts(self.counts_of_events, e)
         self.find_freq_events()
