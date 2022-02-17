@@ -200,8 +200,8 @@ class Preprocessor:
         print("Clustering trajectories...")
         self.normalize_trajectory_features()
         print("Clustered trajectories.")
-        #self.trajectories_to_pickle()
-        #print("Trajectories output to trajectories_features.pkl")
+        self.trajectories_to_pickle()
+        print("Trajectories output to trajectories_features_labels.pkl")
 
 DATA_PREFIX = "Geolife Trajectories 1.3/Data/"
 p = Preprocessor(os.getcwd()+"/"+DATA_PREFIX)
