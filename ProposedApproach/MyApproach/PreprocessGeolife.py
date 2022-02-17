@@ -67,9 +67,11 @@ class Preprocessor:
     def slant(self, traj):
         sd_len = sqrt((traj[-1][1]-traj[0][1])**2 + (traj[-1][0]-traj[0][0])**2)
         dx = traj[-1][0] - traj[0][0]
-        sine = dx / sd_len
-        
-        return sine
+        if sd_len > 0:
+            sine = dx / sd_len
+            return sine
+        else:
+            return 0
 
     def get_features(self):
         trajs = []
