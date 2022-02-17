@@ -7,7 +7,6 @@ from scipy.cluster.hierarchy import linkage, fcluster
 from tqdm import tqdm
 import pickle
 from math import sqrt
-import numpy as np
 
 class Preprocessor:
     def __init__(self, data_path):
@@ -44,7 +43,7 @@ class Preprocessor:
                     self.process_file(self.data_path+i+'/Trajectory/'+j))
 
     def distance_of_transition(self, transition):
-        return geopy.distance.distance(list(reversed(transition[0])), list(reversed(transition[1]))).meters
+        return geopy.distance.great_circle(list(reversed(transition[0])), list(reversed(transition[1]))).meters
 
     def distance_of_trajectory(self, traj):
         dist = 0.0
