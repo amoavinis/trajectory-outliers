@@ -38,7 +38,7 @@ class Preprocessor:
         return result
 
     def create_trajectories(self):
-        for i in tqdm(os.listdir(self.data_path)[:4]):
+        for i in tqdm(os.listdir(self.data_path)):
             for j in os.listdir(self.data_path+i+'/Trajectory/'):
                 self.all_trajectories.append(
                     self.process_file(self.data_path+i+'/Trajectory/'+j))
