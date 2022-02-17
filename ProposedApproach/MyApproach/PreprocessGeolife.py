@@ -44,7 +44,7 @@ class Preprocessor:
                     self.process_file(self.data_path+i+'/Trajectory/'+j))
 
     def distance_of_transition(self, transition):
-        return geopy.distance.distance(transition[0], transition[1]).meters
+        return geopy.distance.distance(list(reversed(transition[0])), list(reversed(transition[1]))).meters
 
     def distance_of_trajectory(self, traj):
         dist = 0.0
