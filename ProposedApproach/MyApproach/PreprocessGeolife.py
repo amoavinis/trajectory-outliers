@@ -7,6 +7,7 @@ from scipy.cluster.hierarchy import linkage, fcluster
 from tqdm import tqdm
 import pickle
 from math import sqrt
+import numpy as np
 
 class Preprocessor:
     def __init__(self, data_path):
@@ -14,7 +15,7 @@ class Preprocessor:
         self.all_trajectories = []
         self.scaler = Scaler()
         self.traj_scaler = MinMaxScaler()
-        self.representation_pca = None
+        self.paths = []
         self.grid_scale = 100
         self.inliers = []
         self.outliers = []
@@ -28,6 +29,8 @@ class Preprocessor:
         for line in lines:
             split_line = line.split(",")
             latitude = float(split_line[0])
+            if latitude > 100:
+                latitude /= 10
             longitude = float(split_line[1])
             timestamp = ' '.join(split_line[5:]).strip()
             timestamp = datetime.datetime.strptime(
@@ -37,7 +40,7 @@ class Preprocessor:
         return result
 
     def create_trajectories(self):
-        for i in tqdm(os.listdir(self.data_path)):
+        for i in tqdm(os.listdir(self.data_path)[20:58]):
             for j in os.listdir(self.data_path+i+'/Trajectory/'):
                 self.all_trajectories.append(
                     self.process_file(self.data_path+i+'/Trajectory/'+j))
@@ -67,9 +70,11 @@ class Preprocessor:
     def slant(self, traj):
         sd_len = sqrt((traj[-1][1]-traj[0][1])**2 + (traj[-1][0]-traj[0][0])**2)
         dx = traj[-1][0] - traj[0][0]
-        sine = dx / sd_len
-        
-        return sine
+        if sd_len > 0:
+            sine = dx / sd_len
+            return sine
+        else:
+            return 0
 
     def get_features(self):
         trajs = []
@@ -104,7 +109,7 @@ class Preprocessor:
 
     def fit_point_scaler(self):
         self.scaler.fit(self.take_points())
-    
+
     def transform_trajectory_to_grid(self, traj, grid_scale):
         trajectory_transformed = []
         for p in traj:
@@ -127,28 +132,31 @@ class Preprocessor:
                 filtered_dict[sd] = sd_pairs[sd]
             else:
                 self.outliers.extend(sd_pairs[sd])
-                
+
         return filtered_dict
 
-    def intersection(self, lst1, lst2): 
+    def intersection(self, lst1, lst2):
         temp = set(lst2)
         lst3 = [value for value in lst1 if value in temp]
         return lst3
-    
+
     def union(self, lst1, lst2):
         final_list = list(set(lst1) | set(lst2))
-        return final_list        
+        return final_list
+
+    def clear_trajectory(self, traj):
+        return traj[2:-1]
 
     def normalize_trajectory_features(self):
         trajectories = self.all_trajectories
-        temp = [traj[2:-1] for traj in trajectories]
+        temp = [self.clear_trajectory(traj) for traj in trajectories]
         temp = self.traj_scaler.fit_transform(temp)
-        transformed = [trajectories[i][:2] + temp[i].tolist() + trajectories[i][-1] for i in range(len(trajectories))]
+        transformed = [trajectories[i][:2] + temp[i].tolist() + [trajectories[i][-1]] for i in range(len(trajectories))]
         self.all_trajectories = transformed
 
     def custom_distance(self, x1, x2):
-        grid_x1 = self.transform_trajectory_to_grid(x1[0], 1000)
-        grid_x2 = self.transform_trajectory_to_grid(x2[0], 1000)
+        grid_x1 = self.transform_trajectory_to_grid(self.paths[int(x1[0])], 1000)
+        grid_x2 = self.transform_trajectory_to_grid(self.paths[int(x2[0])], 1000)
         jaccard_sq = (1 - len(self.intersection(grid_x1, grid_x2))/len(self.union(grid_x1, grid_x2)))**2
         d_slant_sq = ((x1[1] - x2[1])/2)**2
         rest_squared = sum([(x1[i] - x2[i])**2 for i in range(2, len(x1)-1)])
@@ -158,9 +166,15 @@ class Preprocessor:
 
     def clustering_trajectories(self):
         trajectories = self.all_trajectories
-        filtered_sd = self.group_by_sd_pairs(trajectories, 100)
+        filtered_sd = self.group_by_sd_pairs(trajectories, 10)
+        print(len(filtered_sd))
         for k in filtered_sd:
-            linked = linkage(filtered_sd[k], method='complete', metric=self.custom_distance, optimal_ordering=True)
+            to_cluster = [traj[:-1] for traj in filtered_sd[k]]
+            self.paths = [t[0] for t in filtered_sd[k]]
+            for i in range(len(to_cluster)):
+                to_cluster[i][0] = i
+            #to_cluster = np.array(to_cluster, dtype='object')
+            linked = linkage(to_cluster, method='complete', metric=self.custom_distance, optimal_ordering=True)
             clusters = fcluster(linked, t=0.2, criterion='distance')
 
             clusters_grouped = dict()
@@ -197,7 +211,7 @@ class Preprocessor:
         self.normalize_trajectory_features()
         print("Normalized trajectory features.")
         print("Clustering trajectories...")
-        self.normalize_trajectory_features()
+        self.clustering_trajectories()
         print("Clustered trajectories.")
         self.trajectories_to_pickle()
         print("Trajectories output to trajectories_features_labels.pkl")
