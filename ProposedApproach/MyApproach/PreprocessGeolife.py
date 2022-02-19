@@ -30,7 +30,7 @@ class Preprocessor:
             split_line = line.split(",")
             latitude = float(split_line[0])
             if latitude > 100:
-                latitude -= 390
+                latitude -= 360
             longitude = float(split_line[1])
             timestamp = ' '.join(split_line[5:]).strip()
             timestamp = datetime.datetime.strptime(
