@@ -40,7 +40,7 @@ class Preprocessor:
         return result
 
     def create_trajectories(self):
-        for i in tqdm(os.listdir(self.data_path)[20:58]):
+        for i in tqdm(os.listdir(self.data_path)):
             for j in os.listdir(self.data_path+i+'/Trajectory/'):
                 self.all_trajectories.append(
                     self.process_file(self.data_path+i+'/Trajectory/'+j))
@@ -167,13 +167,11 @@ class Preprocessor:
     def clustering_trajectories(self):
         trajectories = self.all_trajectories
         filtered_sd = self.group_by_sd_pairs(trajectories, 10)
-        print(len(filtered_sd))
         for k in filtered_sd:
             to_cluster = [traj[:-1] for traj in filtered_sd[k]]
             self.paths = [t[0] for t in filtered_sd[k]]
             for i in range(len(to_cluster)):
                 to_cluster[i][0] = i
-            #to_cluster = np.array(to_cluster, dtype='object')
             linked = linkage(to_cluster, method='complete', metric=self.custom_distance, optimal_ordering=True)
             clusters = fcluster(linked, t=0.2, criterion='distance')
 
