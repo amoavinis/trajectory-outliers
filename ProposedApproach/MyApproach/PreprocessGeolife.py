@@ -88,8 +88,8 @@ class Preprocessor:
                 traj[-1][0],
                 traj[-1][1],
                 self.distance_of_trajectory(traj),
-                speeds['min_speed'],
-                speeds['max_speed'],
+                #speeds['min_speed'],
+                #speeds['max_speed'],
                 speeds['avg_speed'],
                 [x[2] for x in traj]
             ]
@@ -165,6 +165,7 @@ class Preprocessor:
         return sqrt(sum_sq)
 
     def clustering_trajectories(self):
+        from collections import Counter
         trajectories = self.all_trajectories
         filtered_sd = self.group_by_sd_pairs(trajectories, 10)
         for k in filtered_sd:
@@ -172,9 +173,14 @@ class Preprocessor:
             self.paths = [t[0] for t in filtered_sd[k]]
             for i in range(len(to_cluster)):
                 to_cluster[i][0] = i
+            total_dist = 0.0
+            for x in to_cluster:
+                for y in to_cluster:
+                    total_dist += self.custom_distance(x, y)
+            print(total_dist/(len(to_cluster)**2))
             linked = linkage(to_cluster, method='complete', metric=self.custom_distance, optimal_ordering=True)
-            clusters = fcluster(linked, t=0.2, criterion='distance')
-
+            clusters = fcluster(linked, t=100, criterion='distance')
+            print(Counter(clusters))
             clusters_grouped = dict()
             for i in range(len(clusters)):
                 if clusters[i] in clusters_grouped:
