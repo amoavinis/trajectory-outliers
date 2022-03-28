@@ -123,8 +123,10 @@ class Preprocessor:
     def union(self, lst1, lst2):
         return set(lst1).union(lst2)
 
-    def custom_distance(self, x1, x2, debug=False):
-        jaccard_sq = 1 - len(self.intersection(x1, x2))/len(self.union(x1, x2))
+    def custom_distance(self, x1, x2):
+        X1 = self.paths[int(x1)]
+        X2 = self.paths[int(x2)]
+        jaccard_sq = 1 - len(self.intersection(X1, X2))/len(self.union(X1, X2))
         return jaccard_sq
 
     def clustering_trajectories(self):
@@ -134,7 +136,8 @@ class Preprocessor:
         #print(len(list(filtered_sd.values())))
         print(len(self.outliers))
         for k in filtered_sd:
-            to_cluster = filtered_sd[k]
+            self.paths = filtered_sd[k]
+            to_cluster = list(range(len(self.paths)))
             #total_dist = 0.0
             #for x in to_cluster[:100]:
             #    for y in to_cluster[:100]:
