@@ -34,10 +34,10 @@ class Preprocessor:
             if latitude > 100:
                 latitude -= 360
             longitude = float(split_line[1])
-            timestamp = ' '.join(split_line[5:]).strip()
-            timestamp = datetime.datetime.strptime(
-                timestamp, '%Y-%m-%d %H:%M:%S').timestamp()
-            result.append([longitude, latitude, timestamp])
+            #timestamp = ' '.join(split_line[5:]).strip()
+            #timestamp = datetime.datetime.strptime(
+            #    timestamp, '%Y-%m-%d %H:%M:%S').timestamp()
+            result.append([longitude, latitude])
 
         return result
 
@@ -77,26 +77,6 @@ class Preprocessor:
             return sine
         else:
             return 0
-
-    def get_features(self):
-        trajs = []
-        for traj in tqdm(self.all_trajectories):
-            #speeds = self.speeds_in_traj(traj)
-            t = [
-                [x[:2] for x in traj],
-                #self.slant(traj),
-                #traj[0][0],
-                #traj[0][1],
-                #traj[-1][0],
-                #traj[-1][1],
-                #self.distance_of_trajectory(traj),
-                #speeds['min_speed'],
-                #speeds['max_speed'],
-                #speeds['avg_speed'],
-                [x[2] for x in traj]
-            ]
-            trajs.append(t)
-        self.all_trajectories = trajs
 
     def take_points(self):
         all_points = []
@@ -143,53 +123,19 @@ class Preprocessor:
     def union(self, lst1, lst2):
         return set(lst1).union(lst2)
 
-    def clear_trajectory(self, traj):
-        return traj[2:-1]
-
-    def normalize_trajectory_features(self):
-        return
-        #trajectories = self.all_trajectories
-        #temp = [self.clear_trajectory(traj) for traj in trajectories]
-        #temp = self.traj_scaler.fit_transform(temp)
-        #transformed = [trajectories[i][:2] + temp[i].tolist() + [trajectories[i][-1]] for i in range(len(trajectories))]
-        #self.all_trajectories = transformed
-
     def custom_distance(self, x1, x2, debug=False):
-        grid_x1 = self.transform_trajectory_to_grid(x1, 200)
-        grid_x2 = self.transform_trajectory_to_grid(x2, 200)
-        jaccard_sq = (1 - len(self.intersection(grid_x1, grid_x2))/len(self.union(grid_x1, grid_x2)))**2
-        if debug:
-            print(grid_x1)
-            print(grid_x2)
-            print(len(self.intersection(grid_x1, grid_x2)))
-            print(len(self.union(grid_x1, grid_x2)))
-            print(jaccard_sq)
-        #d_slant_sq = ((x1[1] - x2[1])/2)**2
-        if debug:
-            print(d_slant_sq)
-        #rest_squared = sum([(x1[i] - x2[i])**2 for i in range(2, len(x1)-1)])
-        if debug:
-            print(rest_squared)
-        sum_sq = jaccard_sq #+ d_slant_sq + rest_squared
-
-        return sqrt(sum_sq)
+        jaccard_sq = 1 - len(self.intersection(x1, x2))/len(self.union(x1, x2))
+        return jaccard_sq
 
     def clustering_trajectories(self):
-        #from collections import Counter
-        trajectories = self.all_trajectories
+        trajectories = [self.transform_trajectory_to_grid(t, 200) for t in self.all_trajectories]
         filtered_sd = self.group_by_sd_pairs(trajectories, 2)
         print(len(trajectories))
         #print(len(list(filtered_sd.values())))
         print(len(self.outliers))
         for k in filtered_sd:
             to_cluster = filtered_sd[k]
-            #self.paths = [t[0] for t in filtered_sd[k]]
-            #for i in range(len(to_cluster)):
-                #to_cluster[i][0] = i
             total_dist = 0.0
-            #print("DEBUG")
-            #self.custom_distance(to_cluster[0], to_cluster[1], True)
-            #print("END DEBUG")
             for x in to_cluster[:100]:
                 for y in to_cluster[:100]:
                     total_dist += self.custom_distance(x, y)
@@ -197,7 +143,7 @@ class Preprocessor:
             print(len(to_cluster))
             linked = linkage(to_cluster, method='complete', metric=self.custom_distance)
             clusters = fcluster(linked, t=self.dist_clustering, criterion='distance')
-            #print(Counter(clusters))
+
             clusters_grouped = dict()
             for i in range(len(clusters)):
                 if clusters[i] in clusters_grouped:
@@ -229,12 +175,6 @@ class Preprocessor:
         print("Fitting point scaler...")
         self.fit_point_scaler()
         print("Fitted point scaler.")
-        print("Extracting features...")
-        self.get_features()
-        print("Features extracted.")
-        print("Normalizing trajectory features...")
-        self.normalize_trajectory_features()
-        print("Normalized trajectory features.")
         print("Clustering trajectories...")
         self.clustering_trajectories()
         print("Clustered trajectories.")

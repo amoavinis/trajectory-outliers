@@ -1,6 +1,8 @@
 import itertools
 import ast
 
+import tqdm
+
 class TOP:
     def __init__(self, all_trajectories, search_spaces, freq_events, minSup):
         self.all_trajectories = all_trajectories
@@ -22,7 +24,7 @@ class TOP:
         if len(seq) >= current_len:
             combinations = list(itertools.combinations(seq[1:], current_len-1))
             combinations = [[seq[0]]+list(c) for c in combinations]
-            for x in combinations:
+            for x in tqdm.tqdm(combinations):
                 if all([y[0] not in global_availability for y in x]):
                     results.append(x)
         return results
