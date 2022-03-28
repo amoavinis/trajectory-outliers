@@ -3,7 +3,8 @@ import geopy.distance
 from CustomScaler import Scaler
 from sklearn.preprocessing import MinMaxScaler
 import datetime
-from scipy.cluster.hierarchy import linkage, fcluster
+from fastcluster import linkage
+from scipy.cluster.hierarchy import fcluster
 from tqdm import tqdm
 import pickle
 from math import sqrt
@@ -16,7 +17,8 @@ class Preprocessor:
         self.scaler = Scaler()
         self.traj_scaler = MinMaxScaler()
         self.paths = []
-        self.grid_scale = 100
+        self.dist_clustering = 0.5
+        self.grouping_grid_scale = 20
         self.inliers = []
         self.outliers = []
 
@@ -79,18 +81,18 @@ class Preprocessor:
     def get_features(self):
         trajs = []
         for traj in tqdm(self.all_trajectories):
-            speeds = self.speeds_in_traj(traj)
+            #speeds = self.speeds_in_traj(traj)
             t = [
                 [x[:2] for x in traj],
-                self.slant(traj),
-                traj[0][0],
-                traj[0][1],
-                traj[-1][0],
-                traj[-1][1],
-                self.distance_of_trajectory(traj),
+                #self.slant(traj),
+                #traj[0][0],
+                #traj[0][1],
+                #traj[-1][0],
+                #traj[-1][1],
+                #self.distance_of_trajectory(traj),
                 #speeds['min_speed'],
                 #speeds['max_speed'],
-                speeds['avg_speed'],
+                #speeds['avg_speed'],
                 [x[2] for x in traj]
             ]
             trajs.append(t)
@@ -119,8 +121,8 @@ class Preprocessor:
     def group_by_sd_pairs(self, trajectories, threshold):
         sd_pairs = dict()
         for traj in trajectories:
-            s = self.coords_to_grid(traj[0][0], 100)
-            d = self.coords_to_grid(traj[0][-1], 100)
+            s = self.coords_to_grid(traj[0][0], self.grouping_grid_scale)
+            d = self.coords_to_grid(traj[0][-1], self.grouping_grid_scale)
             sd_pair = s+'->'+d
             if sd_pair in sd_pairs:
                 sd_pairs[sd_pair].append(traj)
@@ -136,51 +138,66 @@ class Preprocessor:
         return filtered_dict
 
     def intersection(self, lst1, lst2):
-        temp = set(lst2)
-        lst3 = [value for value in lst1 if value in temp]
-        return lst3
+        return set(lst1).intersection(lst2)
 
     def union(self, lst1, lst2):
-        final_list = list(set(lst1) | set(lst2))
-        return final_list
+        return set(lst1).union(lst2)
 
     def clear_trajectory(self, traj):
         return traj[2:-1]
 
     def normalize_trajectory_features(self):
-        trajectories = self.all_trajectories
-        temp = [self.clear_trajectory(traj) for traj in trajectories]
-        temp = self.traj_scaler.fit_transform(temp)
-        transformed = [trajectories[i][:2] + temp[i].tolist() + [trajectories[i][-1]] for i in range(len(trajectories))]
-        self.all_trajectories = transformed
+        return
+        #trajectories = self.all_trajectories
+        #temp = [self.clear_trajectory(traj) for traj in trajectories]
+        #temp = self.traj_scaler.fit_transform(temp)
+        #transformed = [trajectories[i][:2] + temp[i].tolist() + [trajectories[i][-1]] for i in range(len(trajectories))]
+        #self.all_trajectories = transformed
 
-    def custom_distance(self, x1, x2):
-        grid_x1 = self.transform_trajectory_to_grid(self.paths[int(x1[0])], 1000)
-        grid_x2 = self.transform_trajectory_to_grid(self.paths[int(x2[0])], 1000)
+    def custom_distance(self, x1, x2, debug=False):
+        grid_x1 = self.transform_trajectory_to_grid(x1, 200)
+        grid_x2 = self.transform_trajectory_to_grid(x2, 200)
         jaccard_sq = (1 - len(self.intersection(grid_x1, grid_x2))/len(self.union(grid_x1, grid_x2)))**2
-        d_slant_sq = ((x1[1] - x2[1])/2)**2
-        rest_squared = sum([(x1[i] - x2[i])**2 for i in range(2, len(x1)-1)])
-        sum_sq = jaccard_sq + d_slant_sq + rest_squared
+        if debug:
+            print(grid_x1)
+            print(grid_x2)
+            print(len(self.intersection(grid_x1, grid_x2)))
+            print(len(self.union(grid_x1, grid_x2)))
+            print(jaccard_sq)
+        #d_slant_sq = ((x1[1] - x2[1])/2)**2
+        if debug:
+            print(d_slant_sq)
+        #rest_squared = sum([(x1[i] - x2[i])**2 for i in range(2, len(x1)-1)])
+        if debug:
+            print(rest_squared)
+        sum_sq = jaccard_sq #+ d_slant_sq + rest_squared
 
         return sqrt(sum_sq)
 
     def clustering_trajectories(self):
-        from collections import Counter
+        #from collections import Counter
         trajectories = self.all_trajectories
-        filtered_sd = self.group_by_sd_pairs(trajectories, 10)
+        filtered_sd = self.group_by_sd_pairs(trajectories, 2)
+        print(len(trajectories))
+        #print(len(list(filtered_sd.values())))
+        print(len(self.outliers))
         for k in filtered_sd:
-            to_cluster = [traj[:-1] for traj in filtered_sd[k]]
-            self.paths = [t[0] for t in filtered_sd[k]]
-            for i in range(len(to_cluster)):
-                to_cluster[i][0] = i
+            to_cluster = filtered_sd[k]
+            #self.paths = [t[0] for t in filtered_sd[k]]
+            #for i in range(len(to_cluster)):
+                #to_cluster[i][0] = i
             total_dist = 0.0
-            for x in to_cluster:
-                for y in to_cluster:
+            #print("DEBUG")
+            #self.custom_distance(to_cluster[0], to_cluster[1], True)
+            #print("END DEBUG")
+            for x in to_cluster[:100]:
+                for y in to_cluster[:100]:
                     total_dist += self.custom_distance(x, y)
-            print(total_dist/(len(to_cluster)**2))
-            linked = linkage(to_cluster, method='complete', metric=self.custom_distance, optimal_ordering=True)
-            clusters = fcluster(linked, t=100, criterion='distance')
-            print(Counter(clusters))
+            print(total_dist/(len(to_cluster[:100])**2))
+            print(len(to_cluster))
+            linked = linkage(to_cluster, method='complete', metric=self.custom_distance)
+            clusters = fcluster(linked, t=self.dist_clustering, criterion='distance')
+            #print(Counter(clusters))
             clusters_grouped = dict()
             for i in range(len(clusters)):
                 if clusters[i] in clusters_grouped:
@@ -202,9 +219,13 @@ class Preprocessor:
         pickle.dump(res, open(os.getcwd()+'/trajectories_features_labels.pkl', 'wb'))
 
     def preprocess(self):
-        print("Creating trajectories...")
-        self.create_trajectories()
-        print("Trajectories created.")
+        if os.path.exists("trajectories_raw.pkl"):
+            self.all_trajectories = pickle.load(open("trajectories_raw.pkl", "rb"))
+        else:
+            print("Creating trajectories...")
+            self.create_trajectories()
+            pickle.dump(self.all_trajectories, open("trajectories_raw.pkl", "wb"))
+            print("Trajectories created.")
         print("Fitting point scaler...")
         self.fit_point_scaler()
         print("Fitted point scaler.")
@@ -219,6 +240,8 @@ class Preprocessor:
         print("Clustered trajectories.")
         self.trajectories_to_pickle()
         print("Trajectories output to trajectories_features_labels.pkl")
+        print(len(self.inliers))
+        print(len(self.outliers))
 
 DATA_PREFIX = "Datasets/Geolife Trajectories 1.3/Data/"
 p = Preprocessor(os.getcwd()+"/"+DATA_PREFIX)
