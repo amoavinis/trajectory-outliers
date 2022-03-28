@@ -5,6 +5,7 @@ from sklearn.preprocessing import MinMaxScaler
 import datetime
 from fastcluster import linkage
 from scipy.cluster.hierarchy import fcluster
+from scipy.spatial import distance
 from tqdm import tqdm
 import pickle
 from math import sqrt
@@ -18,7 +19,7 @@ class Preprocessor:
         self.traj_scaler = MinMaxScaler()
         self.paths = []
         self.dist_clustering = 0.5
-        self.grouping_grid_scale = 20
+        self.grouping_grid_scale = 30
         self.inliers = []
         self.outliers = []
 
@@ -124,27 +125,27 @@ class Preprocessor:
         return set(lst1).union(lst2)
 
     def custom_distance(self, x1, x2):
-        X1 = self.paths[int(x1)]
-        X2 = self.paths[int(x2)]
-        jaccard_sq = 1 - len(self.intersection(X1, X2))/len(self.union(X1, X2))
+        X1 = set([str(x[0])+'-'+str(x[1]) for x in self.paths[int(x1)]])
+        X2 = set([str(x[0])+'-'+str(x[1]) for x in self.paths[int(x2)]])
+        jaccard_sq = 1 - len(X1.intersection(X2))/len(X1.union(X2))#distance.jaccard(X1, X2)
         return jaccard_sq
 
     def clustering_trajectories(self):
         trajectories = [self.transform_trajectory_to_grid(t, 200) for t in self.all_trajectories]
-        filtered_sd = self.group_by_sd_pairs(trajectories, 2)
+        filtered_sd = self.group_by_sd_pairs(self.all_trajectories, 2)
         print(len(trajectories))
         #print(len(list(filtered_sd.values())))
         print(len(self.outliers))
         for k in filtered_sd:
             self.paths = filtered_sd[k]
-            to_cluster = list(range(len(self.paths)))
+            to_cluster = [[i] for i in range(len(self.paths))]
             #total_dist = 0.0
             #for x in to_cluster[:100]:
             #    for y in to_cluster[:100]:
             #        total_dist += self.custom_distance(x, y)
             #print(total_dist/(len(to_cluster[:100])**2))
-            #print(len(to_cluster))
-            print(to_cluster[0])
+            print(len(to_cluster))
+            #print(to_cluster[0])
             linked = linkage(to_cluster, method='complete', metric=self.custom_distance)
             clusters = fcluster(linked, t=self.dist_clustering, criterion='distance')
 
