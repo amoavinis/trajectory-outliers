@@ -101,8 +101,8 @@ class Preprocessor:
     def group_by_sd_pairs(self, trajectories, threshold):
         sd_pairs = dict()
         for traj in trajectories:
-            s = self.coords_to_grid(traj[0][0], self.grouping_grid_scale)
-            d = self.coords_to_grid(traj[0][-1], self.grouping_grid_scale)
+            s = self.coords_to_grid(traj[0], self.grouping_grid_scale)
+            d = self.coords_to_grid(traj[-1], self.grouping_grid_scale)
             sd_pair = s+'->'+d
             if sd_pair in sd_pairs:
                 sd_pairs[sd_pair].append(traj)
@@ -135,12 +135,13 @@ class Preprocessor:
         print(len(self.outliers))
         for k in filtered_sd:
             to_cluster = filtered_sd[k]
-            total_dist = 0.0
-            for x in to_cluster[:100]:
-                for y in to_cluster[:100]:
-                    total_dist += self.custom_distance(x, y)
-            print(total_dist/(len(to_cluster[:100])**2))
-            print(len(to_cluster))
+            #total_dist = 0.0
+            #for x in to_cluster[:100]:
+            #    for y in to_cluster[:100]:
+            #        total_dist += self.custom_distance(x, y)
+            #print(total_dist/(len(to_cluster[:100])**2))
+            #print(len(to_cluster))
+            print(to_cluster[0])
             linked = linkage(to_cluster, method='complete', metric=self.custom_distance)
             clusters = fcluster(linked, t=self.dist_clustering, criterion='distance')
 
