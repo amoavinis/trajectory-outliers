@@ -11,7 +11,7 @@ class Normalizer:
         self.all_trajectories = []
         self.scaler = Scaler()
         self.traj_scaler = MinMaxScaler()
-        self.grid_scale = 100
+        self.grid_scale = 10000
         self.trajectories_with_grid = []
 
     def process_file(self, f):
@@ -29,7 +29,7 @@ class Normalizer:
             result.append([longitude, latitude])
 
         return result
-    
+
     def create_trajectories(self):
         for i in tqdm(os.listdir(self.data_path)):
             for j in os.listdir(self.data_path+i+'/Trajectory/'):
@@ -91,11 +91,12 @@ class Normalizer:
         print("Transformed all trajectories.")
         self.trajectories_to_pickle()
         print("Trajectories output to trajectories_with_grid.pkl")
-    
+
     def trajectory_statistics(self):
         simple_lengths = [len(t[0]) for t in self.trajectories_with_grid]
         grid_lengths = [len(t[1]) for t in self.trajectories_with_grid]
-        print("Lengths of simple paths:", Counter(simple_lengths))
+        #print("Lengths of simple paths:", Counter(simple_lengths))
+        print("Average simple path length:", sum(simple_lengths)/len(simple_lengths))
         print("Lengths of grid paths:", Counter(grid_lengths))
 
 
