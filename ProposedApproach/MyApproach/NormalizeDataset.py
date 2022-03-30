@@ -4,6 +4,7 @@ import pickle
 from tqdm import tqdm
 import os
 from collections import Counter
+from matplotlib import pyplot as plt
 
 class Normalizer:
     def __init__(self, data_path):
@@ -11,7 +12,7 @@ class Normalizer:
         self.all_trajectories = []
         self.scaler = Scaler()
         self.traj_scaler = MinMaxScaler()
-        self.grid_scale = 500
+        self.grid_scale = 10000
         self.trajectories_with_grid = []
 
     def process_file(self, f):
@@ -110,6 +111,9 @@ class Normalizer:
             else:
                 sd_pairs[sd] = 1
         print(sum(sd_pairs.values())/len(sd_pairs))
+        vals = list(sd_pairs.values())
+        plt.hist(vals, bins=500)
+        plt.savefig('hist.jpg')
             #sd_pairs.append(sd)
         #print(Counter(sd_pairs))
 
