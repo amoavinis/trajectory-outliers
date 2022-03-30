@@ -99,8 +99,17 @@ class Normalizer:
         print("Average simple path length:", sum(simple_lengths)/len(simple_lengths))
         print("Lengths of grid paths:", Counter(grid_lengths))
 
+    def analyze_sd_pairs(self):
+        sd_pairs = []
+        for t in self.trajectories_with_grid:
+            s = t[1][0]
+            d = t[1][-1]
+            sd = s+"->"+d
+            sd_pairs.append(sd)
+        print(Counter(sd_pairs))
 
 DATA_PREFIX = "Datasets/Geolife Trajectories 1.3/Data/"
 nm = Normalizer(os.getcwd()+"/"+DATA_PREFIX)
 nm.preprocess()
 nm.trajectory_statistics()
+nm.analyze_sd_pairs()
