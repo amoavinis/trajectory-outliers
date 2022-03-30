@@ -12,7 +12,7 @@ class Normalizer:
         self.all_trajectories = []
         self.scaler = Scaler()
         self.traj_scaler = MinMaxScaler()
-        self.grid_scale = 10000
+        self.grid_scale = 500
         self.trajectories_with_grid = []
 
     def process_file(self, f):
