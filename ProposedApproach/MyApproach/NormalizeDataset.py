@@ -112,7 +112,7 @@ class Normalizer:
                 sd_pairs[sd] = 1
         print(sum(sd_pairs.values())/len(sd_pairs))
         vals = list(sd_pairs.values())
-        plt.hist(vals, bins=20)
+        plt.hist(vals, bins=5)
         plt.savefig('hist.jpg')
             #sd_pairs.append(sd)
         #print(Counter(sd_pairs))
