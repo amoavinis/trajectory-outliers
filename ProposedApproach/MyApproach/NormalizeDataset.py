@@ -11,7 +11,7 @@ class Normalizer:
         self.all_trajectories = []
         self.scaler = Scaler()
         self.traj_scaler = MinMaxScaler()
-        self.grid_scale = 10000
+        self.grid_scale = 500
         self.trajectories_with_grid = []
 
     def process_file(self, f):
@@ -100,13 +100,18 @@ class Normalizer:
         print("Lengths of grid paths:", Counter(grid_lengths))
 
     def analyze_sd_pairs(self):
-        sd_pairs = []
+        sd_pairs = dict()
         for t in self.trajectories_with_grid:
             s = t[1][0]
             d = t[1][-1]
             sd = s+"->"+d
-            sd_pairs.append(sd)
-        print(Counter(sd_pairs))
+            if sd in sd_pairs:
+                sd_pairs[sd] += 1
+            else:
+                sd_pairs[sd] = 1
+        print(sum(sd_pairs.values())/len(sd_pairs))
+            #sd_pairs.append(sd)
+        #print(Counter(sd_pairs))
 
 DATA_PREFIX = "Datasets/Geolife Trajectories 1.3/Data/"
 nm = Normalizer(os.getcwd()+"/"+DATA_PREFIX)
