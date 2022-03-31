@@ -5,14 +5,15 @@ from tqdm import tqdm
 import os
 from collections import Counter
 from matplotlib import pyplot as plt
+import sys
 
 class Normalizer:
-    def __init__(self, data_path):
+    def __init__(self, data_path, grid_scale):
         self.data_path = data_path
         self.all_trajectories = []
         self.scaler = Scaler()
         self.traj_scaler = MinMaxScaler()
-        self.grid_scale = 500
+        self.grid_scale = grid_scale
         self.trajectories_with_grid = []
 
     def process_file(self, f):
@@ -50,6 +51,7 @@ class Normalizer:
 
     def fit_point_scaler(self):
         self.scaler.fit(self.take_points())
+        print(self.scaler.min, self.scaler.max)
 
     def remove_duplicates(self, x):
         y = [x[0]]
@@ -102,25 +104,30 @@ class Normalizer:
 
     def analyze_sd_pairs(self):
         sd_pairs = dict()
+        sd_pairs_list = []
         for t in self.trajectories_with_grid:
             s = t[1][0]
             d = t[1][-1]
             sd = s+"->"+d
+            sd_pairs_list.append(sd)
             if sd in sd_pairs:
                 sd_pairs[sd] += 1
             else:
                 sd_pairs[sd] = 1
         print(sum(sd_pairs.values())/len(sd_pairs))
         vals = list(sd_pairs.values())
+        #print(sd_pairs)
         with open('values', 'w') as f:
             f.write(str(vals))
         plt.hist(vals, bins=5)
         plt.savefig('hist.jpg')
-            #sd_pairs.append(sd)
         #print(Counter(sd_pairs))
 
 DATA_PREFIX = "Datasets/Geolife Trajectories 1.3/Data/"
-nm = Normalizer(os.getcwd()+"/"+DATA_PREFIX)
+grid_scale = 2000
+if len(sys.argv) > 1:
+    grid_scale = int(sys.argv[1])
+nm = Normalizer(os.getcwd()+"/"+DATA_PREFIX, grid_scale)
 nm.preprocess()
-nm.trajectory_statistics()
-nm.analyze_sd_pairs()
+#nm.trajectory_statistics()
+#nm.analyze_sd_pairs()

@@ -65,7 +65,7 @@ class Preprocessor:
             if len(sd_pairs[sd]) >= threshold:
                 filtered_dict[sd] = sd_pairs[sd]
             else:
-                self.outliers.extend(sd_pairs[sd])
+                self.outliers.extend([t[0] for t in sd_pairs[sd]])
 
         return filtered_dict
 
@@ -76,27 +76,18 @@ class Preprocessor:
         return set(lst1).union(lst2)
 
     def custom_distance(self, x1, x2):
-        X1 = set(self.paths[int(x1)])
-        X2 = set(self.paths[int(x2)])
+        X1 = set(self.paths[int(x1[0])])
+        X2 = set(self.paths[int(x2[0])])
         jaccard_sq = 1 - len(X1.intersection(X2))/len(X1.union(X2))
         return jaccard_sq
 
     def clustering_trajectories(self):
-        trajectories = [t[1] for t in self.all_trajectories]
-        filtered_sd = self.group_by_sd_pairs(self.all_trajectories, 2)
-        print(len(trajectories))
-        #print(len(list(filtered_sd.values())))
-        print(len(self.outliers))
+        filtered_sd = self.group_by_sd_pairs(self.all_trajectories, 5)
+        print("Total number of trajectories:", len(self.all_trajectories))
+        print("Number of step 1 outliers:", len(self.outliers))
         for k in filtered_sd:
-            self.paths = filtered_sd[k]
+            self.paths = [f[1] for f in filtered_sd[k]]
             to_cluster = [[i] for i in range(len(self.paths))]
-            #total_dist = 0.0
-            #for x in to_cluster[:100]:
-            #    for y in to_cluster[:100]:
-            #        total_dist += self.custom_distance(x, y)
-            #print(total_dist/(len(to_cluster[:100])**2))
-            print(len(to_cluster))
-            #print(to_cluster[0])
             linked = linkage(to_cluster, method='complete', metric=self.custom_distance)
             clusters = fcluster(linked, t=self.dist_clustering, criterion='distance')
 
@@ -108,9 +99,9 @@ class Preprocessor:
                     clusters_grouped[clusters[i]] = [filtered_sd[k][i]]
             for cluster in clusters_grouped:
                 if len(clusters_grouped[cluster])/len(filtered_sd[k]) > 0.03:
-                    self.inliers.extend(clusters_grouped[cluster])
+                    self.inliers.extend([t[0] for t in clusters_grouped[cluster]])
                 else:
-                    self.outliers.extend(clusters_grouped[cluster])
+                    self.outliers.extend([t[0] for t in clusters_grouped[cluster]])
 
     def trajectories_to_pickle(self):
         res = []
@@ -118,7 +109,7 @@ class Preprocessor:
             res.append((inlier, 0))
         for outlier in self.outliers:
             res.append((outlier, 1))
-        pickle.dump(res, open(os.getcwd()+'/trajectories_features_labels.pkl', 'wb'))
+        pickle.dump(res, open(os.getcwd()+'/trajectories_labeled.pkl', 'wb'))
 
     def preprocess(self):
         print("Reading trajectories from disk...")
@@ -128,9 +119,9 @@ class Preprocessor:
         self.clustering_trajectories()
         print("Clustered trajectories.")
         self.trajectories_to_pickle()
-        print("Trajectories output to trajectories_features_labels.pkl")
-        print(len(self.inliers))
-        print(len(self.outliers))
+        print("Trajectories output to trajectories_labeled.pkl")
+        print("Total number of inliers:", len(self.inliers))
+        print("Total number of outliers:", len(self.outliers))
 
 p = Preprocessor()
 p.preprocess()
