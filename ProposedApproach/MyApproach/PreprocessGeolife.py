@@ -12,41 +12,12 @@ from math import sqrt
 import numpy as np
 
 class Preprocessor:
-    def __init__(self, data_path):
-        self.data_path = data_path
+    def __init__(self):
         self.all_trajectories = []
-        self.scaler = Scaler()
-        self.traj_scaler = MinMaxScaler()
         self.paths = []
         self.dist_clustering = 0.5
-        self.grouping_grid_scale = 30
         self.inliers = []
         self.outliers = []
-
-    def process_file(self, f):
-        file = open(f, 'r')
-        lines = file.readlines()[6:]
-
-        result = []
-
-        for line in lines:
-            split_line = line.split(",")
-            latitude = float(split_line[0])
-            if latitude > 100:
-                latitude -= 360
-            longitude = float(split_line[1])
-            #timestamp = ' '.join(split_line[5:]).strip()
-            #timestamp = datetime.datetime.strptime(
-            #    timestamp, '%Y-%m-%d %H:%M:%S').timestamp()
-            result.append([longitude, latitude])
-
-        return result
-
-    def create_trajectories(self):
-        for i in tqdm(os.listdir(self.data_path)):
-            for j in os.listdir(self.data_path+i+'/Trajectory/'):
-                self.all_trajectories.append(
-                    self.process_file(self.data_path+i+'/Trajectory/'+j))
 
     def distance_of_transition(self, transition):
         return geopy.distance.great_circle(list(reversed(transition[0])), list(reversed(transition[1]))).meters
@@ -79,32 +50,12 @@ class Preprocessor:
         else:
             return 0
 
-    def take_points(self):
-        all_points = []
-        for t in self.all_trajectories:
-            for p in t:
-                all_points.append(p[:2])
-        return all_points
-
-    def coords_to_grid(self, coords, grid_scale):
-        grid_coords = [str(int(coords[0]*grid_scale)), str(int(coords[1]*grid_scale))]
-        return '-'.join(grid_coords)
-
-    def fit_point_scaler(self):
-        self.scaler.fit(self.take_points())
-
-    def transform_trajectory_to_grid(self, traj, grid_scale):
-        trajectory_transformed = []
-        for p in traj:
-            trajectory_transformed.append(self.coords_to_grid(self.scaler.transform([p])[0], grid_scale))
-        return trajectory_transformed
-
     def group_by_sd_pairs(self, trajectories, threshold):
         sd_pairs = dict()
         for traj in trajectories:
-            s = self.coords_to_grid(traj[0], self.grouping_grid_scale)
-            d = self.coords_to_grid(traj[-1], self.grouping_grid_scale)
-            sd_pair = s+'->'+d
+            s = traj[1][0]
+            d = traj[1][-1]
+            sd_pair = s+"->"+d
             if sd_pair in sd_pairs:
                 sd_pairs[sd_pair].append(traj)
             else:
@@ -127,11 +78,11 @@ class Preprocessor:
     def custom_distance(self, x1, x2):
         X1 = set([str(x[0])+'-'+str(x[1]) for x in self.paths[int(x1)]])
         X2 = set([str(x[0])+'-'+str(x[1]) for x in self.paths[int(x2)]])
-        jaccard_sq = 1 - len(X1.intersection(X2))/len(X1.union(X2))#distance.jaccard(X1, X2)
+        jaccard_sq = 1 - len(X1.intersection(X2))/len(X1.union(X2))
         return jaccard_sq
 
     def clustering_trajectories(self):
-        trajectories = [self.transform_trajectory_to_grid(t, 200) for t in self.all_trajectories]
+        trajectories = [t[1] for t in self.all_trajectories]
         filtered_sd = self.group_by_sd_pairs(self.all_trajectories, 2)
         print(len(trajectories))
         #print(len(list(filtered_sd.values())))
@@ -170,16 +121,9 @@ class Preprocessor:
         pickle.dump(res, open(os.getcwd()+'/trajectories_features_labels.pkl', 'wb'))
 
     def preprocess(self):
-        if os.path.exists("trajectories_raw.pkl"):
-            self.all_trajectories = pickle.load(open("trajectories_raw.pkl", "rb"))
-        else:
-            print("Creating trajectories...")
-            self.create_trajectories()
-            pickle.dump(self.all_trajectories, open("trajectories_raw.pkl", "wb"))
-            print("Trajectories created.")
-        print("Fitting point scaler...")
-        self.fit_point_scaler()
-        print("Fitted point scaler.")
+        print("Reading trajectories from disk...")
+        self.all_trajectories = pickle.load(open("trajectories_with_grid.pkl", "rb"))
+        print("Read trajectories from disk.")
         print("Clustering trajectories...")
         self.clustering_trajectories()
         print("Clustered trajectories.")
@@ -188,6 +132,5 @@ class Preprocessor:
         print(len(self.inliers))
         print(len(self.outliers))
 
-DATA_PREFIX = "Datasets/Geolife Trajectories 1.3/Data/"
-p = Preprocessor(os.getcwd()+"/"+DATA_PREFIX)
+p = Preprocessor()
 p.preprocess()
