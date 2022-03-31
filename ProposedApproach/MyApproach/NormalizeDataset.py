@@ -25,8 +25,6 @@ class Normalizer:
         for line in lines:
             split_line = line.split(",")
             latitude = float(split_line[0])
-            if latitude > 100:
-                latitude -= 360
             longitude = float(split_line[1])
             result.append([longitude, latitude])
 
@@ -35,8 +33,14 @@ class Normalizer:
     def create_trajectories(self):
         for i in tqdm(os.listdir(self.data_path)):
             for j in os.listdir(self.data_path+i+'/Trajectory/'):
-                self.all_trajectories.append(
-                    self.process_file(self.data_path+i+'/Trajectory/'+j))
+                trajectory = self.process_file(self.data_path+i+'/Trajectory/'+j)
+                valid = True
+                for p in trajectory:
+                    if p[0] < 115 or p[0] > 119 or p[1] < 39 or p[1] > 42:
+                        valid = False
+                        break
+                if valid:
+                    self.all_trajectories.append(trajectory)
 
     def take_points(self):
         all_points = []
