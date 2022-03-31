@@ -76,8 +76,8 @@ class Preprocessor:
         return set(lst1).union(lst2)
 
     def custom_distance(self, x1, x2):
-        X1 = set([str(x[0])+'-'+str(x[1]) for x in self.paths[int(x1)]])
-        X2 = set([str(x[0])+'-'+str(x[1]) for x in self.paths[int(x2)]])
+        X1 = set(self.paths[int(x1)])
+        X2 = set(self.paths[int(x2)])
         jaccard_sq = 1 - len(X1.intersection(X2))/len(X1.union(X2))
         return jaccard_sq
 
