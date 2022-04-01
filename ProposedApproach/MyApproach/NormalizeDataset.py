@@ -55,7 +55,7 @@ class Normalizer:
 
     def fit_point_scaler(self):
         self.scaler.fit(self.take_points())
-        print(self.scaler.min, self.scaler.max)
+        #print(self.scaler.min, self.scaler.max)
 
     def remove_duplicates(self, x):
         y = [x[0]]

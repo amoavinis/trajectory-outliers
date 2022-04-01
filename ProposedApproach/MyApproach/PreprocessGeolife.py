@@ -15,7 +15,7 @@ class Preprocessor:
     def __init__(self):
         self.all_trajectories = []
         self.paths = []
-        self.dist_clustering = 0.5
+        self.dist_clustering = 0.9
         self.inliers = []
         self.outliers = []
 
@@ -82,7 +82,7 @@ class Preprocessor:
         return jaccard_sq
 
     def clustering_trajectories(self):
-        filtered_sd = self.group_by_sd_pairs(self.all_trajectories, 5)
+        filtered_sd = self.group_by_sd_pairs(self.all_trajectories, 2)
         print("Total number of trajectories:", len(self.all_trajectories))
         print("Number of step 1 outliers:", len(self.outliers))
         for k in filtered_sd:
