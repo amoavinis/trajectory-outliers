@@ -16,7 +16,7 @@ class Preprocessor:
     def __init__(self):
         self.all_trajectories = []
         self.paths = []
-        self.dist_clustering = 0.9
+        self.dist_clustering = 0.1
         self.inliers = []
         self.outliers = []
 
@@ -92,9 +92,9 @@ class Preprocessor:
             to_cluster = [[i] for i in range(len(self.paths))]
             linked = linkage(to_cluster, method='complete', metric=self.custom_distance)
             clusters = fcluster(linked, t=self.dist_clustering, criterion='distance')
-
-            silhouette_score = silhouette_score(to_cluster, clusters, metric=self.custom_distance)
-            score.append(silhouette_score)
+            if len(set(clusters)) >= 2 and len(set(clusters)) <= len(to_cluster)-1:
+                silhouette_score_1 = silhouette_score(to_cluster, clusters, metric=self.custom_distance)
+                score.append(silhouette_score_1)
 
             clusters_grouped = dict()
             for i in range(len(clusters)):
