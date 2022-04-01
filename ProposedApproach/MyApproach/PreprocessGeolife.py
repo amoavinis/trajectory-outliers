@@ -1,5 +1,6 @@
 import os
 import geopy.distance
+from sklearn.metrics import silhouette_score
 from CustomScaler import Scaler
 from sklearn.preprocessing import MinMaxScaler
 import datetime
@@ -85,11 +86,15 @@ class Preprocessor:
         filtered_sd = self.group_by_sd_pairs(self.all_trajectories, 2)
         print("Total number of trajectories:", len(self.all_trajectories))
         print("Number of step 1 outliers:", len(self.outliers))
+        score = []
         for k in filtered_sd:
             self.paths = [f[1] for f in filtered_sd[k]]
             to_cluster = [[i] for i in range(len(self.paths))]
             linked = linkage(to_cluster, method='complete', metric=self.custom_distance)
             clusters = fcluster(linked, t=self.dist_clustering, criterion='distance')
+
+            silhouette_score = silhouette_score(to_cluster, clusters, metric=self.custom_distance)
+            score.append(silhouette_score)
 
             clusters_grouped = dict()
             for i in range(len(clusters)):
@@ -102,6 +107,7 @@ class Preprocessor:
                     self.inliers.extend([t[0] for t in clusters_grouped[cluster]])
                 else:
                     self.outliers.extend([t[0] for t in clusters_grouped[cluster]])
+        print("Average silhouette score:", sum(score)/len(score))
 
     def trajectories_to_pickle(self):
         res = []
