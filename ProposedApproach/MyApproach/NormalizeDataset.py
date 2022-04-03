@@ -8,8 +8,9 @@ from matplotlib import pyplot as plt
 import sys
 
 class Normalizer:
-    def __init__(self, data_path, grid_scale):
+    def __init__(self, dataset, data_path, grid_scale):
         self.data_path = data_path
+        self.dataset = dataset
         self.all_trajectories = []
         self.scaler = Scaler()
         self.traj_scaler = MinMaxScaler()
@@ -32,11 +33,14 @@ class Normalizer:
 
     def create_trajectories(self):
         for i in tqdm(os.listdir(self.data_path)):
-            for j in os.listdir(self.data_path+i+'/Trajectory/'):
-                trajectory = self.process_file(self.data_path+i+'/Trajectory/'+j)
+            i_path = self.data_path+i+"/"
+            if self.dataset == "geolife":
+                i_path += "Trajectory/"
+            for j in os.listdir(i_path):
+                trajectory = self.process_file(i_path+j)
                 valid = True
                 for p in trajectory:
-                    if p[0] < 115 or p[0] > 119 or p[1] < 39 or p[1] > 42:
+                    if p[0] < 116 or p[0] > 116.7 or p[1] < 39.7 or p[1] > 40.1:
                         valid = False
                         break
                 if valid:
@@ -127,11 +131,17 @@ class Normalizer:
         plt.savefig('hist.jpg')
         #print(Counter(sd_pairs))
 
-DATA_PREFIX = "Datasets/Geolife Trajectories 1.3/Data/"
+dataset = 'geolife'
 grid_scale = 2000
-if len(sys.argv) > 1:
+data_prefixes = {
+    "geolife": "Datasets/Geolife Trajectories 1.3/Data/",
+    "tdrive": "Datasets/T-Drive/taxi_log_2008_by_id/"
+}
+if len(sys.argv) > 2:
     grid_scale = int(sys.argv[1])
-nm = Normalizer(os.getcwd()+"/"+DATA_PREFIX, grid_scale)
+    dataset = sys.argv[2]
+
+nm = Normalizer(dataset, os.getcwd()+"/"+data_prefixes[dataset], grid_scale)
 nm.preprocess()
 #nm.trajectory_statistics()
 #nm.analyze_sd_pairs()

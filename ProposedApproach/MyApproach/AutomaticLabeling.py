@@ -1,55 +1,18 @@
 import os
-import geopy.distance
+import sys
 from sklearn.metrics import silhouette_score
-from CustomScaler import Scaler
-from sklearn.preprocessing import MinMaxScaler
-import datetime
 from fastcluster import linkage
 from scipy.cluster.hierarchy import fcluster
-from scipy.spatial import distance
-from tqdm import tqdm
 import pickle
-from math import sqrt
-import numpy as np
 
-class Preprocessor:
-    def __init__(self):
+class Labeling:
+    def __init__(self, dataset):
         self.all_trajectories = []
         self.paths = []
         self.dist_clustering = 0.1
         self.inliers = []
         self.outliers = []
-
-    def distance_of_transition(self, transition):
-        return geopy.distance.great_circle(list(reversed(transition[0])), list(reversed(transition[1]))).meters
-
-    def distance_of_trajectory(self, traj):
-        dist = 0.0
-        for i in range(len(traj) - 1):
-            dist += self.distance_of_transition([traj[i][:2], traj[i+1][:2]])
-        return dist
-
-    def speeds_in_traj(self, traj):
-        speeds = []
-        for i in range(len(traj)-1):
-            dx = self.distance_of_transition([traj[i][:2], traj[i+1][:2]])
-            dt = traj[i+1][2] - traj[i][2]
-            if dt > 0:
-                speeds.append(dx/dt)
-        return {
-            'min_speed': min(speeds),
-            'max_speed': max(speeds),
-            'avg_speed': sum(speeds)/len(speeds)
-        }
-
-    def slant(self, traj):
-        sd_len = sqrt((traj[-1][1]-traj[0][1])**2 + (traj[-1][0]-traj[0][0])**2)
-        dx = traj[-1][0] - traj[0][0]
-        if sd_len > 0:
-            sine = dx / sd_len
-            return sine
-        else:
-            return 0
+        self.dataset = dataset
 
     def group_by_sd_pairs(self, trajectories, threshold):
         sd_pairs = dict()
@@ -115,19 +78,23 @@ class Preprocessor:
             res.append((inlier, 0))
         for outlier in self.outliers:
             res.append((outlier, 1))
-        pickle.dump(res, open(os.getcwd()+'/trajectories_labeled.pkl', 'wb'))
+        pickle.dump(res, open(os.getcwd()+"/trajectories_labeled_"+self.dataset+".pkl", 'wb'))
 
-    def preprocess(self):
+    def start(self):
         print("Reading trajectories from disk...")
-        self.all_trajectories = pickle.load(open("trajectories_with_grid.pkl", "rb"))
+        self.all_trajectories = pickle.load(open("trajectories_with_grid_"+self.dataset+".pkl", "rb"))
         print("Read trajectories from disk.")
         print("Clustering trajectories...")
         self.clustering_trajectories()
         print("Clustered trajectories.")
         self.trajectories_to_pickle()
-        print("Trajectories output to trajectories_labeled.pkl")
+        print("Trajectories output to trajectories_labeled_"+self.dataset+".pkl")
         print("Total number of inliers:", len(self.inliers))
         print("Total number of outliers:", len(self.outliers))
 
-p = Preprocessor()
-p.preprocess()
+if len(sys.argv) > 1:
+    dataset = sys.argv[1]
+    p = Labeling(dataset)
+    p.start()
+else:
+    print("Specify dataset...")
