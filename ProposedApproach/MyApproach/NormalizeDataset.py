@@ -33,11 +33,19 @@ class Normalizer:
 
     def create_trajectories(self):
         for i in tqdm(os.listdir(self.data_path)):
-            i_path = self.data_path+i+"/"
             if self.dataset == "geolife":
-                i_path += "Trajectory/"
-            for j in os.listdir(i_path):
-                trajectory = self.process_file(i_path+j)
+                i_path = self.data_path+i+"/Trajectory/"
+                for j in os.listdir(i_path):
+                    trajectory = self.process_file(i_path+j)
+                    valid = True
+                    for p in trajectory:
+                        if p[0] < 116 or p[0] > 116.7 or p[1] < 39.7 or p[1] > 40.1:
+                            valid = False
+                            break
+                    if valid:
+                        self.all_trajectories.append(trajectory)
+            else:
+                trajectory = self.process_file(self.data_path+i)
                 valid = True
                 for p in trajectory:
                     if p[0] < 116 or p[0] > 116.7 or p[1] < 39.7 or p[1] > 40.1:
@@ -101,7 +109,7 @@ class Normalizer:
         self.transform_all_trajectories()
         print("Transformed all trajectories.")
         self.trajectories_to_pickle()
-        print("Trajectories output to trajectories_with_grid.pkl")
+        print("Trajectories output to trajectories_with_grid_"+self.dataset+".pkl")
 
     def trajectory_statistics(self):
         simple_lengths = [len(t[0]) for t in self.trajectories_with_grid]
