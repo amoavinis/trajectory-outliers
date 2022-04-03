@@ -52,19 +52,19 @@ class Normalizer:
                     trajectory = self.process_file(i_path+j)
                     valid = True
                     for p in trajectory:
-                        if p[0] < 116 or p[0] > 116.7 or p[1] < 39.7 or p[1] > 40.1:
+                        if p[0] < 115.5  or p[0] > 117 or p[1] < 39.3 or p[1] > 40.8:
                             valid = False
                             break
-                    if valid:
+                    if valid and len(trajectory) > 0:
                         self.all_trajectories.append(trajectory)
             else:
                 trajectory = self.process_file(self.data_path+i)
                 valid = True
                 for p in trajectory:
-                    if p[0] < 116 or p[0] > 116.7 or p[1] < 39.7 or p[1] > 40.1:
+                    if p[0] < 115.5 or p[0] > 117 or p[1] < 39.3 or p[1] > 40.8:
                         valid = False
                         break
-                if valid:
+                if valid and len(trajectory) > 0:
                     self.all_trajectories.append(trajectory)
 
     def take_points(self):

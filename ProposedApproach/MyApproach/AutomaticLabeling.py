@@ -9,7 +9,7 @@ class Labeling:
     def __init__(self, dataset):
         self.all_trajectories = []
         self.paths = []
-        self.dist_clustering = 0.1
+        self.dist_clustering = 0.5
         self.inliers = []
         self.outliers = []
         self.dataset = dataset
