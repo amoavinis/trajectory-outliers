@@ -82,7 +82,7 @@ class Normalizer:
 
     def trajectories_to_pickle(self):
         data = self.trajectories_with_grid
-        pickle.dump(data, open(os.getcwd()+'/trajectories_with_grid.pkl', 'wb'))
+        pickle.dump(data, open(os.getcwd()+"/trajectories_with_grid_"+self.dataset+".pkl", 'wb'))
 
     def preprocess(self):
         if os.path.exists("trajectories_raw_"+self.dataset+".pkl"):
