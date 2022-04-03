@@ -85,14 +85,14 @@ class Normalizer:
         pickle.dump(data, open(os.getcwd()+'/trajectories_with_grid.pkl', 'wb'))
 
     def preprocess(self):
-        if os.path.exists("trajectories_raw.pkl"):
+        if os.path.exists("trajectories_raw_"+self.dataset+".pkl"):
             print("Reading trajectories from disk...")
-            self.all_trajectories = pickle.load(open("trajectories_raw.pkl", "rb"))
+            self.all_trajectories = pickle.load(open("trajectories_raw_"+self.dataset+".pkl", "rb"))
             print("Read trajectories from disk.")
         else:
             print("Creating trajectories...")
             self.create_trajectories()
-            pickle.dump(self.all_trajectories, open("trajectories_raw.pkl", "wb"))
+            pickle.dump(self.all_trajectories, open("trajectories_raw_"+self.dataset+".pkl", "wb"))
             print("Trajectories created.")
         print("Fitting point scaler...")
         self.fit_point_scaler()
