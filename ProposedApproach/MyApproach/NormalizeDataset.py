@@ -19,17 +19,30 @@ class Normalizer:
 
     def process_file(self, f):
         file = open(f, 'r')
-        lines = file.readlines()[6:]
+        if self.dataset == "geolife":
+            lines = file.readlines()[6:]
 
-        result = []
+            result = []
 
-        for line in lines:
-            split_line = line.split(",")
-            latitude = float(split_line[0])
-            longitude = float(split_line[1])
-            result.append([longitude, latitude])
+            for line in lines:
+                split_line = line.split(",")
+                latitude = float(split_line[0])
+                longitude = float(split_line[1])
+                result.append([longitude, latitude])
 
-        return result
+            return result
+        else:
+            lines = file.readlines()
+
+            result = []
+
+            for line in lines:
+                split_line = line.split(",")[2:]
+                latitude = float(split_line[1])
+                longitude = float(split_line[0])
+                result.append([longitude, latitude])
+
+            return result
 
     def create_trajectories(self):
         for i in tqdm(os.listdir(self.data_path)):
