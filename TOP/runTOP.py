@@ -7,7 +7,7 @@ from sklearn.metrics import f1_score
 
 dataset = "geolife"
 if len(sys.argv) > 1:
-    dataset = sys.argv[2]
+    dataset = sys.argv[1]
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
 X = [d[0] for d in data]
