@@ -22,10 +22,12 @@ class TOPClassifier:
 
     def produceSubsequences(self, seq, current_len, global_availability):
         results = []
+        seq = [x[0] for x in seq]
         if len(seq) >= current_len:
-            combinations = list(itertools.combinations(seq[1:], current_len-1))
-            combinations = [[seq[0]]+list(c) for c in combinations]
-            for x in tqdm.tqdm(combinations):
+            permutations = list(itertools.permutations(seq[1:]))
+            permutations = [[seq[0]]+list(p) for p in permutations]
+
+            for x in permutations:
                 if all([y[0] not in global_availability for y in x]):
                     results.append(x)
         return results
@@ -46,7 +48,7 @@ class TOPClassifier:
         subseqs = dict()
         usedPositions = dict()
         freq_seqs = []
-        subs = []     
+        subs = []
         for seq in search_space:
             subs.extend(self.produceSubsequences(seq, current_len, global_availability))
         for seq in subs:
@@ -75,7 +77,7 @@ class TOPClassifier:
         new_search_space = []
         for elem in search_space:
             if any([x[1] not in self.global_availability for x in elem]):
-                new_search_space.append(elem)                
+                new_search_space.append(elem)
         return new_search_space
 
     def getPatternFromOccurrence(self, occ):
@@ -112,7 +114,7 @@ class TOPClassifier:
         self.freq_patterns = freq_patterns
 
     def traj_to_string(self, traj):
-        return "->".join(traj)    
+        return "->".join(traj)
 
     def predict_for_one(self, freq_patterns, x):
         D = self.seqGap + 2
@@ -127,7 +129,7 @@ class TOPClassifier:
         freq_patterns_set = set()
         for p in self.freq_patterns:
             freq_patterns_set.add('->'.join(p))
-        
+
         labels = [self.predict_for_one(freq_patterns_set, x) for x in X]
-        
+
         return labels

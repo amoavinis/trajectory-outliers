@@ -52,7 +52,7 @@ class Preprocessor:
         for i in range(len(self.all_trajectories)):
             for j in range(len(self.all_trajectories[i])):
                 self.all_trajectories[i][j] = self.coords_to_grid(self.all_trajectories[i][j], self.cells_per_dim)
-            #self.all_trajectories[i] = self.remove_repetitions(self.all_trajectories[i])
+            self.all_trajectories[i] = self.remove_repetitions(self.all_trajectories[i])
             for e in self.all_trajectories[i]:
                 self.counts_of_events = self.add_to_counts(self.counts_of_events, e)
 
@@ -60,7 +60,7 @@ class Preprocessor:
         for e in self.counts_of_events:
             if self.counts_of_events[e] >= self.minSup:
                 self.freq_events.add(e)
-    
+
     def remove_infrequent(self, freqs, traj):
         filtered = []
         for p in traj:
@@ -94,7 +94,7 @@ class Preprocessor:
                         break
             subsequences.append(subsequence)
         return subsequences
-        
+
     def create_search_spaces(self):
         for traj in tqdm.tqdm(self.all_trajectories):
             for e in set(traj):
@@ -111,7 +111,7 @@ class Preprocessor:
                     self.search_spaces[e] = subsequences_filtered
                 else:
                     self.search_spaces[e].extend(subsequences_filtered)
-            
+
 
     def preprocess(self):
         self.take_points()
