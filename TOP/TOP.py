@@ -1,8 +1,6 @@
 import itertools
 import ast
 
-import tqdm
-
 class TOPClassifier:
     def __init__(self, all_trajectories, search_spaces, freq_events, minSup, seqGap):
         self.all_trajectories = all_trajectories
@@ -67,7 +65,7 @@ class TOPClassifier:
         for traj in arr:
             if len(traj) == 0:
                 continue
-            traj_arr = ast.literal_eval(traj)
+            traj_arr = "->".join(traj)
             for elem in traj_arr:
                 all_event_timesteps.add(elem)
         return all_event_timesteps
@@ -113,6 +111,7 @@ class TOPClassifier:
         self.freq_patterns = freq_patterns
 
     def traj_to_string(self, traj):
+        print(traj)
         return "->".join(traj)
 
     def predict_for_one(self, freq_patterns, x):
