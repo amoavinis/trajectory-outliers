@@ -1,4 +1,3 @@
-import os
 from CustomScaler import Scaler
 import tqdm
 
@@ -14,25 +13,6 @@ class Preprocessor:
         self.counts_of_events = dict()
         self.freq_events = set()
         self.search_spaces = dict()
-    
-    def process_file(self, f):
-        file = open(f, 'r')
-        lines = file.readlines()[6:]
-
-        result = []
-
-        for line in lines:
-            split_line = line.split(",")
-            latitude = float(split_line[0])
-            longitude = float(split_line[1])
-            result.append([latitude, longitude])
-
-        return result
-
-    def create_trajectories(self):
-        for i in os.listdir(self.data_path):
-            for j in os.listdir(self.data_path+i+'/Trajectory/'):
-                self.all_trajectories.append(self.process_file(self.data_path+i+'/Trajectory/'+j))
 
     def take_points(self):
         for t in self.all_trajectories:
