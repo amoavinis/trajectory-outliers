@@ -22,7 +22,6 @@ class TOPClassifier:
 
     def produceSubsequences(self, seq, current_len, global_availability):
         results = []
-        seq = [x[0] for x in seq]
         if len(seq) >= current_len:
             permutations = list(itertools.permutations(seq[1:]))
             permutations = [[seq[0]]+list(p) for p in permutations]
@@ -81,7 +80,7 @@ class TOPClassifier:
         return new_search_space
 
     def getPatternFromOccurrence(self, occ):
-        return [x[0] for x in occ];
+        return [x[0] for x in occ]
 
     def fit(self):
         g_max = 0
