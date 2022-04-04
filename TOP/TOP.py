@@ -3,14 +3,15 @@ import ast
 
 import tqdm
 
-class TOP:
-    def __init__(self, all_trajectories, search_spaces, freq_events, minSup):
+class TOPClassifier:
+    def __init__(self, all_trajectories, search_spaces, freq_events, minSup, seqGap):
         self.all_trajectories = all_trajectories
         self.search_spaces = search_spaces
         self.freq_events = freq_events
         self.global_availability = set()
         self.minSup = minSup
         self.freq_patterns = []
+        self.seqGap = seqGap
 
     def max_subsequence(self, arr):
         max_len = 0
@@ -110,17 +111,23 @@ class TOP:
             current_len -= 1
         self.freq_patterns = freq_patterns
 
+    def traj_to_string(self, traj):
+        return "->".join(traj)    
+
+    def predict_for_one(self, freq_patterns, x):
+        D = self.seqGap + 2
+        for d in range(D, 1, -1):
+            if len(x) >= d and self.traj_to_string(x[:d]) in freq_patterns:
+                return self.predict_for_one(freq_patterns, x[d:])
+            elif len(x) == d and self.traj_to_string(x) in freq_patterns:
+                return 0
+        return 1
+
     def predict(self, X):
         freq_patterns_set = set()
         for p in self.freq_patterns:
-            freq_patterns_set.add(','.join(p))
+            freq_patterns_set.add('->'.join(p))
         
-        labels = []
-        for x in X:
-            x_str = ','.join(x)
-            if x_str in freq_patterns_set:
-                labels.append(0)
-            else:
-                labels.append(1)
+        labels = [self.predict_for_one(freq_patterns_set, x) for x in X]
         
         return labels

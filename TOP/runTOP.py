@@ -1,8 +1,9 @@
 from CreateSearchSpaces import Preprocessor
-from TOP import TOP
+from TOP import TOPClassifier
 import sys
 import pickle
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
 
 dataset = "geolife"
 if len(sys.argv) > 1:
@@ -23,11 +24,16 @@ print("Preprocessing started")
 preprocessor.preprocess()
 print("Preprocessing ended")
 
-top = TOP(preprocessor.all_trajectories, preprocessor.search_spaces,
-          preprocessor.freq_events, minSup)
+top = TOPClassifier(preprocessor.all_trajectories, preprocessor.search_spaces,
+          preprocessor.freq_events, minSup, seqGap)
 top.fit()
 
 freqPatterns = top.freq_patterns
 
-print(freqPatterns[:5])
+print(freqPatterns[:10])
 
+y_pred_train = top.predict(x_train)
+y_pred_test = top.predict(x_test)
+
+print(f1_score(y_train, y_pred_train, average='macro'))
+print(f1_score(y_test, y_pred_test, average='macro'))

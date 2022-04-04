@@ -2,12 +2,11 @@ from CustomScaler import Scaler
 import tqdm
 
 class Preprocessor:
-    def __init__(self, data_path, cells_per_dim, minSup, seqGap):
-        self.data_path = data_path
+    def __init__(self, trajectories, cells_per_dim, minSup, seqGap):
         self.cells_per_dim = cells_per_dim
         self.minSup = minSup
         self.seqGap = seqGap
-        self.all_trajectories = []
+        self.all_trajectories = trajectories
         self.all_points = []
         self.scaler = Scaler()
         self.counts_of_events = dict()
@@ -115,8 +114,6 @@ class Preprocessor:
             
 
     def preprocess(self):
-        self.create_trajectories()
-        print("Created trajectories")
         self.take_points()
         print("Took points")
         self.fit_scaler_and_transform_trajectories()
