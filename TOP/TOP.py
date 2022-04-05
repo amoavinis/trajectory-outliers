@@ -96,7 +96,7 @@ class TOPClassifier:
 
         freq_patterns = []
         while current_len > 0 and len(prefix_set) > 0:
-            print("Mining CF patterns for length-" + current_len + "sequences." )
+            print("Mining CF patterns for length-" + str(current_len) + "sequences." )
             cur_freq = []
             for p_set in tqdm.tqdm(prefix_set):
                 if not p_set in self.search_spaces:
