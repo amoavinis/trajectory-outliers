@@ -1,8 +1,10 @@
 import itertools
 import ast
 
+import tqdm
+
 class TOPClassifier:
-    def __init__(self, all_trajectories, search_spaces, freq_events, minSup, seqGap, scaler, grid_scale):
+    def __init__(self, all_trajectories, search_spaces, freq_events, minSup, seqGap):
         self.all_trajectories = all_trajectories
         self.search_spaces = search_spaces
         self.freq_events = freq_events
@@ -10,8 +12,6 @@ class TOPClassifier:
         self.minSup = minSup
         self.freq_patterns = []
         self.seqGap = seqGap
-        self.scaler = scaler
-        self.grid_scale = grid_scale
 
     def max_subsequence(self, arr):
         max_len = 0
@@ -22,11 +22,16 @@ class TOPClassifier:
 
     def produceSubsequences(self, seq, current_len, global_availability):
         results = []
+        #print(seq)
+        seq = [x[0] for x in seq]
+        print(seq)
         if len(seq) >= current_len:
-            permutations = list(itertools.permutations(seq[1:]))
-            permutations = [[seq[0]]+list(p) for p in permutations]
-
-            for x in permutations:
+            combinations = list(itertools.combinations(seq[1:], current_len-1))
+            print(combinations)
+            combinations = [[seq[0]].extend(c) for c in combinations]
+            print(combinations)
+            eerrhg
+            for x in tqdm.tqdm(combinations):
                 if all([y[0] not in global_availability for y in x]):
                     results.append(x)
         return results
@@ -59,7 +64,7 @@ class TOPClassifier:
                 usedPositions[str(self.getPatternFromOccurrence(seq))] = self.setUsed(seq, usedPositions.get(str(self.getPatternFromOccurrence(seq))))
         for p in subseqs:
             if subseqs[p] >= minSup:
-                freq_seqs.append(ast.literal_eval(p))
+                freq_seqs.append(p)
         return freq_seqs
 
     def cur_freq_events(self, arr):
@@ -67,7 +72,7 @@ class TOPClassifier:
         for traj in arr:
             if len(traj) == 0:
                 continue
-            traj_arr = "->".join(traj)
+            traj_arr = ast.literal_eval(traj)
             for elem in traj_arr:
                 all_event_timesteps.add(elem)
         return all_event_timesteps
@@ -76,11 +81,11 @@ class TOPClassifier:
         new_search_space = []
         for elem in search_space:
             if any([x[1] not in self.global_availability for x in elem]):
-                new_search_space.append(elem)
+                new_search_space.append(elem)                
         return new_search_space
 
     def getPatternFromOccurrence(self, occ):
-        return [x[0] for x in occ]
+        return [x[0] for x in occ];
 
     def fit(self):
         g_max = 0
@@ -113,7 +118,7 @@ class TOPClassifier:
         self.freq_patterns = freq_patterns
 
     def traj_to_string(self, traj):
-        return "->".join(traj)
+        return "->".join(traj)    
 
     def predict_for_one(self, freq_patterns, x):
         D = self.seqGap + 2
@@ -128,9 +133,7 @@ class TOPClassifier:
         freq_patterns_set = set()
         for p in self.freq_patterns:
             freq_patterns_set.add('->'.join(p))
-
-        X = [self.scaler.trajectory_to_grid(x, self.grid_scale) for x in X]
-
+        
         labels = [self.predict_for_one(freq_patterns_set, x) for x in X]
-
+        
         return labels

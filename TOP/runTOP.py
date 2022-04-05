@@ -3,7 +3,7 @@ from TOP import TOPClassifier
 import sys
 import pickle
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, accuracy_score
 
 dataset = "geolife"
 if len(sys.argv) > 1:
@@ -36,4 +36,6 @@ y_pred_train = top.predict(x_train)
 y_pred_test = top.predict(x_test)
 
 print(f1_score(y_train, y_pred_train, average='macro'))
+print(accuracy_score(y_train, y_pred_train))
 print(f1_score(y_test, y_pred_test, average='macro'))
+print(accuracy_score(y_test, y_pred_test))
