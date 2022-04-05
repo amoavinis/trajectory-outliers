@@ -1,6 +1,8 @@
 import itertools
 import ast
 
+import tqdm
+
 class TOPClassifier:
     def __init__(self, all_trajectories, search_spaces, freq_events, minSup, seqGap, scaler, grid_scale):
         self.all_trajectories = all_trajectories
@@ -94,8 +96,9 @@ class TOPClassifier:
 
         freq_patterns = []
         while current_len > 0 and len(prefix_set) > 0:
+            print("Mining CF patterns for length-" + current_len + "sequences." )
             cur_freq = []
-            for p_set in prefix_set:
+            for p_set in tqdm.tqdm(prefix_set):
                 if not p_set in self.search_spaces:
                     continue
                 if self.max_subsequence(self.search_spaces[p_set]) >= current_len:
