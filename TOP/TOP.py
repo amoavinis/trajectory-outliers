@@ -2,7 +2,7 @@ import itertools
 import ast
 
 class TOPClassifier:
-    def __init__(self, all_trajectories, search_spaces, freq_events, minSup, seqGap):
+    def __init__(self, all_trajectories, search_spaces, freq_events, minSup, seqGap, scaler, grid_scale):
         self.all_trajectories = all_trajectories
         self.search_spaces = search_spaces
         self.freq_events = freq_events
@@ -10,6 +10,8 @@ class TOPClassifier:
         self.minSup = minSup
         self.freq_patterns = []
         self.seqGap = seqGap
+        self.scaler = scaler
+        self.grid_scale = grid_scale
 
     def max_subsequence(self, arr):
         max_len = 0
@@ -57,7 +59,7 @@ class TOPClassifier:
                 usedPositions[str(self.getPatternFromOccurrence(seq))] = self.setUsed(seq, usedPositions.get(str(self.getPatternFromOccurrence(seq))))
         for p in subseqs:
             if subseqs[p] >= minSup:
-                freq_seqs.append(p)
+                freq_seqs.append(ast.literal_eval(p))
         return freq_seqs
 
     def cur_freq_events(self, arr):
@@ -127,6 +129,8 @@ class TOPClassifier:
         freq_patterns_set = set()
         for p in self.freq_patterns:
             freq_patterns_set.add('->'.join(p))
+        
+        X = [self.scaler.trajectory_to_grid(x, self.grid_scale) for x in X]
 
         labels = [self.predict_for_one(freq_patterns_set, x) for x in X]
 

@@ -20,26 +20,7 @@ class Preprocessor:
 
     def fit_scaler_and_transform_trajectories(self):
         self.scaler.fit(self.all_points)
-        all_trajectories_transformed = []
-        for t in self.all_trajectories:
-            t1 = []
-            for p in t:
-                t1.append(self.scaler.transform([p])[0])
-            all_trajectories_transformed.append(t1)
-        self.all_trajectories = all_trajectories_transformed
-
-    def coords_to_grid(self, coords, grid_scale):
-        grid_coords = [str(int(coords[0]*grid_scale)), str(int(coords[1]*grid_scale))]
-        return '-'.join(grid_coords)
-
-    def remove_repetitions(self, traj):
-        previous = None
-        result = []
-        for p in traj:
-            if p != previous:
-                result.append(p)
-            previous = p
-        return result
+        self.all_trajectories = [self.scaler.transform_trajectory(t) for t in self.all_trajectories]
 
     def add_to_counts(self, d, e):
         if d.get(e) != None:
@@ -49,11 +30,11 @@ class Preprocessor:
         return d
 
     def trajectories_to_grid(self):
-        for i in range(len(self.all_trajectories)):
-            for j in range(len(self.all_trajectories[i])):
-                self.all_trajectories[i][j] = self.coords_to_grid(self.all_trajectories[i][j], self.cells_per_dim)
-            self.all_trajectories[i] = self.remove_repetitions(self.all_trajectories[i])
-            for e in self.all_trajectories[i]:
+        self.all_trajectories = [self.scaler.trajectory_to_grid(t, self.cells_per_dim) for t in self.all_trajectories]
+
+    def count_events(self):
+        for t in self.all_trajectories:
+            for e in t:
                 self.counts_of_events = self.add_to_counts(self.counts_of_events, e)
 
     def find_freq_events(self):
@@ -120,10 +101,8 @@ class Preprocessor:
         print("Scaled trajectories")
         self.trajectories_to_grid()
         print("Grid created")
+        self.count_events()
         #self.all_trajectories = [['a', 'b', 'c', 'd', 'a', 'b', 'c', 'a', 'c', 'b', 'e', 'a', 'c']]
-        for i in tqdm.tqdm(range(len(self.all_trajectories))):
-            for e in self.all_trajectories[i]:
-                self.counts_of_events = self.add_to_counts(self.counts_of_events, e)
         self.find_freq_events()
         print("Found frequent events")
         self.create_search_spaces()

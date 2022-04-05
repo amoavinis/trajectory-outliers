@@ -25,7 +25,7 @@ preprocessor.preprocess()
 print("Preprocessing ended")
 
 top = TOPClassifier(preprocessor.all_trajectories, preprocessor.search_spaces,
-          preprocessor.freq_events, minSup, seqGap)
+          preprocessor.freq_events, minSup, seqGap, preprocessor.scaler, grid_scale)
 top.fit()
 
 freqPatterns = top.freq_patterns

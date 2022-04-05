@@ -21,6 +21,27 @@ class Scaler:
                  (x[1] - self.min[1]) / (self.max[1] - self.min[1])]
                 for x in X]
 
+    def transform_trajectory(self, trajectory):
+        return [self.transform([p])[0] for p in trajectory]
+
+    def coords_to_grid(self, coords, grid_scale):
+        grid_coords = [str(int(coords[0]*grid_scale)), str(int(coords[1]*grid_scale))]
+        return '-'.join(grid_coords)
+
+    def remove_repetitions(self, traj):
+        previous = None
+        result = []
+        for p in traj:
+            if p != previous:
+                result.append(p)
+            previous = p
+        return result
+
+    def trajectory_to_grid(self, trajectory, grid_scale):
+        trajectory = [self.coords_to_grid(p, grid_scale) for p in trajectory]
+        trajectory = self.remove_repetitions(trajectory)
+        return trajectory
+
     def fit_transform(self, X):
         self.fit(X)
         return self.transform(X)
