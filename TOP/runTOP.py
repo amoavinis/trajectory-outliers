@@ -31,6 +31,8 @@ top.fit()
 print("Fitting complete.")
 
 freqPatterns = top.freq_patterns
+from collections import Counter
+print(Counter([len(cf) for cf in freqPatterns]))
 
 print(freqPatterns[:10])
 
