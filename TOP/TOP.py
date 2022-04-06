@@ -84,6 +84,13 @@ class TOPClassifier:
     def getPatternFromOccurrence(self, occ):
         return [x[0] for x in occ]
 
+    def removeRepetitions(self, trajectory):
+        cleaned = [trajectory[0]]
+        for p in trajectory[1:]:
+            if cleaned[-1] != p:
+                cleaned.append(p)
+        return cleaned
+
     def fit(self):
         g_max = 0
         for e in self.freq_events:
