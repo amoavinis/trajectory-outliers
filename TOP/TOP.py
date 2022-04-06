@@ -126,13 +126,14 @@ class TOPClassifier:
         return "->".join(traj)
 
     def predict_for_one(self, freq_patterns, x):
-        D = self.seqGap + 2
+        return 0 if self.traj_to_string(x) in freq_patterns else 1
+        """ D = self.seqGap + 2
         for d in range(D, 1, -1):
             if len(x) >= d and self.traj_to_string(x[:d]) in freq_patterns:
                 return self.predict_for_one(freq_patterns, x[d:])
             elif len(x) == d and self.traj_to_string(x) in freq_patterns:
                 return 0
-        return 1
+        return 1 """
 
     def predict(self, X):
         freq_patterns_set = set()
