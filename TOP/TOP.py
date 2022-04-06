@@ -120,7 +120,7 @@ class TOPClassifier:
                     self.search_spaces.pop(p_set)
             freq_patterns.extend(cur_freq)
             current_len -= 1
-        self.freq_patterns = freq_patterns
+        self.freq_patterns = [self.removeRepetitions(fp) for fp in freq_patterns]
 
     def traj_to_string(self, traj):
         return "->".join(traj)
