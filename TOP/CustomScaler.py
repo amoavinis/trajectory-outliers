@@ -42,6 +42,3 @@ class Scaler:
         trajectory = self.remove_repetitions(trajectory)
         return trajectory
 
-    def fit_transform(self, X):
-        self.fit(X)
-        return self.transform(X)
