@@ -1,15 +1,8 @@
-import os
-from sklearn.preprocessing import MinMaxScaler
 import datetime
 from sklearn.cluster import DBSCAN
 
-
 class STO:
-
-    def __init__(self, data_path, cells_per_dim, timebin_duration,
-                 weeks_before_and_after):
-        self.data_path = data_path
-        self.cells_per_dim = cells_per_dim
+    def __init__(self, timebin_duration, weeks_before_and_after):
         self.timebin_duration = timebin_duration
         self.W = weeks_before_and_after
         self.all_points = []
@@ -17,31 +10,7 @@ class STO:
         self.all_transitions_indexed = dict()
         self.labels_indexed = dict()
 
-        self.scaler = MinMaxScaler()
         self.date_scaler = {'first_monday': None, 'min_date': 10**10}
-
-    def process_file(self, f):
-        file = open(f, 'r')
-        lines = file.readlines()[6:]
-
-        result = []
-
-        for line in lines:
-            split_line = line.split(",")
-            latitude = float(split_line[0])
-            longitude = float(split_line[1])
-            timestamp = '-'.join(split_line[5:]).strip()
-            result.append([latitude, longitude, timestamp])
-
-        return result
-
-    def create_trajectories(self):
-        all_trajectories = []
-        for i in os.listdir(self.data_path)[:10]:
-            for j in os.listdir(self.data_path + i + '/Trajectory/'):
-                all_trajectories.append(
-                    self.process_file(self.data_path + i + '/Trajectory/' + j))
-        return all_trajectories
 
     def process_trajectory(self, traj):
         trip = [t[:2] for t in traj]
@@ -114,54 +83,12 @@ class STO:
                     week_dict[day_hour_key] = [t]
             self.all_trajectories_indexed[week_key] = week_dict
 
-    def process_trips(self, trips):
-        self.take_points(trips)
-        trips = self.fit_scaler_and_transform_trajectories(trips)
-        trips = self.trajectories_to_grid(trips)
-        return trips
-
-    def process_trips_transform(self, trips):
-        trips = self.transform_trajectories(trips)
-        trips = self.trajectories_to_grid(trips)
-        return trips
-
-    def take_points(self, trips):
-        for t in trips:
-            for p in t:
-                self.all_points.append(p)
-
-    def fit_scaler_and_transform_trajectories(self, trips):
-        self.scaler.fit(self.all_points)
-        all_trajectories_transformed = self.transform_trajectories(trips)
-        return all_trajectories_transformed
-
-    def transform_trajectories(self, trips):
-        all_trajectories_transformed = []
-        for t in trips:
-            t1 = self.scaler.transform([p for p in t]).tolist()
-            all_trajectories_transformed.append(t1)
-        return all_trajectories_transformed
-
-    def coords_to_grid(self, coords, grid_scale):
-        grid_coords = [
-            str(int(coords[0] * grid_scale)),
-            str(int(coords[1] * grid_scale))
-        ]
-        return '-'.join(grid_coords)
-
     def add_to_counts(self, d, e):
         if d.get(e) != None:
             d[e] += 1
         else:
             d[e] = 1
         return d
-
-    def trajectories_to_grid(self, trips):
-        for i in range(len(trips)):
-            for j in range(len(trips[i])):
-                trips[i][j] = self.coords_to_grid(trips[i][j],
-                                                  self.cells_per_dim)
-        return trips
 
     def median_transition_time(self, datetime_str1, datetime_str2):
         datetime1 = datetime.datetime.strptime(

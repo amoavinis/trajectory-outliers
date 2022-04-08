@@ -17,8 +17,8 @@ class Labeling:
     def group_by_sd_pairs(self, trajectories, threshold):
         sd_pairs = dict()
         for traj in trajectories:
-            s = traj[1][0]
-            d = traj[1][-1]
+            s = traj[1][0][0] if self.dataset == "geolife" else traj[1][0]
+            d = traj[1][-1][0] if self.dataset == "geolife" else traj[1][-1]
             sd_pair = s+"->"+d
             if sd_pair in sd_pairs:
                 sd_pairs[sd_pair].append(traj)
@@ -40,8 +40,12 @@ class Labeling:
         return set(lst1).union(lst2)
 
     def custom_distance(self, x1, x2):
-        X1 = set(self.paths[int(x1[0])])
-        X2 = set(self.paths[int(x2[0])])
+        if self.dataset == "geolife":
+            X1 = set([p[0] for p in self.paths[int(x1[0])]])
+            X2 = set([p[0] for p in self.paths[int(x2[0])]])
+        else:
+            X1 = set(self.paths[int(x1[0])])
+            X2 = set(self.paths[int(x2[0])])
         jaccard_sq = 1 - len(X1.intersection(X2))/len(X1.union(X2))
         return jaccard_sq
 

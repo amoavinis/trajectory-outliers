@@ -1,3 +1,4 @@
+from datetime import datetime
 from CustomScaler import Scaler
 from sklearn.preprocessing import MinMaxScaler
 import pickle
@@ -28,7 +29,11 @@ class Normalizer:
                 split_line = line.split(",")
                 latitude = float(split_line[0])
                 longitude = float(split_line[1])
-                result.append([longitude, latitude])
+                date = split_line[5]
+                time = split_line[6]
+                dt = date + " " + time
+                timestamp = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S").timestamp()
+                result.append([longitude, latitude, timestamp])
 
             return result
         else:
@@ -85,14 +90,21 @@ class Normalizer:
     def remove_duplicates(self, x):
         y = [x[0]]
         for i in range(1, len(x)):
-            if y[-1] != x[i]:
+            if self.dataset == "geolife" and y[-1][0] != x[i][0]:
+                y.append(x[i][0])
+            elif y[-1] != x[i]:
                 y.append(x[i])
         return y
 
     def transform_trajectory_to_grid(self, traj, grid_scale):
         trajectory_transformed = []
         for p in traj:
-            trajectory_transformed.append(self.coords_to_grid(self.scaler.transform([p])[0], grid_scale))
+            to_append = None
+            if self.dataset == "geolife":
+                to_append = (self.coords_to_grid(self.scaler.transform([p[:2]])[0], grid_scale), p[2])
+            else:
+                to_append = self.coords_to_grid(self.scaler.transform([p[:2]])[0], grid_scale)
+                trajectory_transformed.append(to_append)
         return self.remove_duplicates(trajectory_transformed)
 
     def transform_all_trajectories(self):
