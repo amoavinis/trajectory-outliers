@@ -32,7 +32,7 @@ class Normalizer:
                 date = split_line[5]
                 time = split_line[6]
                 dt = date + " " + time
-                timestamp = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S").timestamp()
+                timestamp = datetime.strptime(dt.strip(), "%Y-%m-%d %H:%M:%S").timestamp()
                 result.append([longitude, latitude, timestamp])
 
             return result
@@ -90,9 +90,7 @@ class Normalizer:
     def remove_duplicates(self, x):
         y = [x[0]]
         for i in range(1, len(x)):
-            if self.dataset == "geolife" and y[-1][0] != x[i][0]:
-                y.append(x[i][0])
-            elif y[-1] != x[i]:
+            if self.dataset == "geolife" and y[-1][0] != x[i][0] or self.dataset != "geolife" and y[-1] != x[i]:
                 y.append(x[i])
         return y
 
@@ -104,7 +102,7 @@ class Normalizer:
                 to_append = (self.coords_to_grid(self.scaler.transform([p[:2]])[0], grid_scale), p[2])
             else:
                 to_append = self.coords_to_grid(self.scaler.transform([p[:2]])[0], grid_scale)
-                trajectory_transformed.append(to_append)
+            trajectory_transformed.append(to_append)
         return self.remove_duplicates(trajectory_transformed)
 
     def transform_all_trajectories(self):
@@ -165,7 +163,7 @@ class Normalizer:
         #print(Counter(sd_pairs))
 
 dataset = 'geolife'
-grid_scale = 2000
+grid_scale = 20
 data_prefixes = {
     "geolife": "Datasets/Geolife Trajectories 1.3/Data/",
     "tdrive": "Datasets/T-Drive/taxi_log_2008_by_id/"
