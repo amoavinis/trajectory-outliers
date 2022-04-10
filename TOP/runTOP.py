@@ -20,7 +20,7 @@ seqGap = int(args.seqGap)
 
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
-X = [d[0] for d in data]
+X = [[p[:2] for p in d[0]] for d in data]
 y = [d[1] for d in data]
 
 scaler = Scaler()

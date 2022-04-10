@@ -22,23 +22,21 @@ class Scaler:
                 for x in X]
 
     def transform_trajectory(self, trajectory):
-        return [self.transform([p])[0] for p in trajectory]
+        return [(self.transform([p[:2]])[0], p[2]) for p in trajectory]
 
     def coords_to_grid(self, coords, grid_scale):
         grid_coords = [str(int(coords[0]*grid_scale)), str(int(coords[1]*grid_scale))]
         return '-'.join(grid_coords)
 
-    def remove_repetitions(self, traj):
-        previous = None
-        result = []
-        for p in traj:
-            if p != previous:
-                result.append(p)
-            previous = p
-        return result
+    def remove_repetitions(self, x):
+        y = [x[0]]
+        for i in range(1, len(x)):
+            if y[-1][0] != x[i][0]:
+                y.append(x[i])
+        return y
 
     def trajectory_to_grid(self, trajectory, grid_scale):
-        trajectory = [self.coords_to_grid(p, grid_scale) for p in trajectory]
+        trajectory = [(self.coords_to_grid(p[0], grid_scale), p[1]) for p in trajectory]
         trajectory = self.remove_repetitions(trajectory)
         return trajectory
 

@@ -1,136 +1,92 @@
 import datetime
-from sklearn.cluster import DBSCAN
+import pytz
+import pandas as pd
+import numpy as np
+from scipy.stats import chi2
+from matplotlib import patches
+import matplotlib.pyplot as plt
 
 class STO:
-    def __init__(self, timebin_duration, weeks_before_and_after):
-        self.timebin_duration = timebin_duration
+    def __init__(self, trajectories, timebin_duration, weeks_before_and_after):
+        self.all_trajectories = trajectories
+        self.T = timebin_duration
         self.W = weeks_before_and_after
-        self.all_points = []
-        self.all_trajectories_indexed = dict()
         self.all_transitions_indexed = dict()
-        self.labels_indexed = dict()
+        self.transitions_4features = dict()
 
-        self.date_scaler = {'first_monday': None, 'min_date': 10**10}
+    def getUnixDay(self, t):
+        return (datetime.datetime.fromtimestamp(t) - datetime.datetime(1970, 1, 1, 0, 0, 0)).days
+    
+    def mean_transition_time(self, t1, t2):
+        mean_timestamp = (t1 + t2) / 2
+        return mean_timestamp
 
-    def process_trajectory(self, traj):
-        trip = [t[:2] for t in traj]
-        date_timestamp, hour_in_seconds = self.median_transition_time(
-            traj[0][2], traj[-1][2])
-        return {
-            'trip': trip,
-            'date_timestamp': date_timestamp,
-            'hour': hour_in_seconds
-        }
-
-    def fit_date_scaler(self, trajectories):
-        for t in trajectories:
-            timestamp = t['date_timestamp']
-            if timestamp < self.date_scaler['min_date']:
-                self.date_scaler['min_date'] = timestamp
-                date = datetime.datetime.fromtimestamp(timestamp)
-                self.date_scaler['first_monday'] = date - datetime.timedelta(
-                    days=date.weekday())
-
-    def transform_trajectories_by_date_scaler(self, trajectories):
-        for i in range(len(trajectories)):
-            day_hour = str(
-                datetime.datetime.fromtimestamp(
-                    trajectories[i]['date_timestamp']).weekday()
-            ) + 'd' + str(trajectories[i]['hour'] //
-                          self.timebin_duration) + 'h'
-            trajectories[i] = {
-                'trip': trajectories[i]['trip'],
-                'week_id': (datetime.datetime.fromtimestamp(
-                    trajectories[i]['date_timestamp']) -
-                            self.date_scaler['first_monday']).days // 7,
-                'day_hour': day_hour
-            }
-
-        return trajectories
-
-    def process_trajectories_week_and_hour(self):
-        all_trajectories = self.create_trajectories()
-        processed_trajectories = [
-            self.process_trajectory(traj) for traj in all_trajectories
-        ]
-
-        trips = [t['trip'] for t in processed_trajectories]
-        trips = self.process_trips(trips)
-        for i in range(len(processed_trajectories)):
-            processed_trajectories[i]['trip'] = trips[i]
-
-        self.fit_date_scaler(processed_trajectories)
-
-        processed_trajectories = self.transform_trajectories_by_date_scaler(processed_trajectories) 
-
-        return processed_trajectories
-
-    def index_trajectories(self):
-        processed_trajectories = self.process_trajectories_week_and_hour()
-        for t in processed_trajectories:
-            week_key = t['week_id']
-            if self.all_trajectories_indexed.get(week_key) != None:
-                self.all_trajectories_indexed[week_key].append(t)
-            else:
-                self.all_trajectories_indexed[week_key] = [t]
-        for week_key in self.all_trajectories_indexed.keys():
-            week_dict = {}
-            for t in self.all_trajectories_indexed[week_key]:
-                day_hour_key = t['day_hour']
-                if week_dict.get(day_hour_key) != None:
-                    week_dict[day_hour_key].append(t)
-                else:
-                    week_dict[day_hour_key] = [t]
-            self.all_trajectories_indexed[week_key] = week_dict
-
-    def add_to_counts(self, d, e):
-        if d.get(e) != None:
-            d[e] += 1
-        else:
-            d[e] = 1
-        return d
-
-    def median_transition_time(self, datetime_str1, datetime_str2):
-        datetime1 = datetime.datetime.strptime(
-            datetime_str1, '%Y-%m-%d-%H:%M:%S').timestamp()
-        datetime2 = datetime.datetime.strptime(
-            datetime_str2, '%Y-%m-%d-%H:%M:%S').timestamp()
-        mean_timestamp = (datetime2 + datetime1) / 2
-        dt_mean = datetime.datetime.fromtimestamp(mean_timestamp)
-        return mean_timestamp, 3600 * dt_mean.hour + 60 * dt_mean.minute + dt_mean.second
-
-    def calculate_transitions_with_features(self, trips):
-        trips = [t['trip'] for t in trips]
-        transitions = dict()
-        outgoing = dict()
-        incoming = dict()
-        for rt in trips:
-            for i in range(len(rt) - 1):
-                transition = [p[0] for p in rt[i:i + 2]]
-                transition_str = ','.join(transition)
-                transitions = self.add_to_counts(transitions, transition_str)
-                outgoing = self.add_to_counts(outgoing, transition[0])
-                incoming = self.add_to_counts(incoming, transition[1])
-        transitions_with_features = dict()
-        for p in transitions:
-            transitions_with_features[p] = {
-                'passing':
-                transitions.get(p),
-                'outgoing_ratio':
-                transitions.get(p) / outgoing.get(p.split(',')[0]),
-                'incoming_ratio':
-                transitions.get(p) / incoming.get(p.split(',')[1])
-            }
-
-        return transitions_with_features
+    def timebin_of_day(self, t):
+        dt = datetime.datetime.fromtimestamp(t)
+        total_seconds = 3600*dt.hour + 60*dt.minute + dt.second
+        return total_seconds%self.T
 
     def index_transitions(self):
-        for week in self.all_trajectories_indexed.keys():
-            self.all_transitions_indexed[week] = dict()
-            for day_hour in self.all_trajectories_indexed[week].keys():
-                self.all_transitions_indexed[week][
-                    day_hour] = self.calculate_transitions_with_features(
-                        self.all_trajectories_indexed[week][day_hour])
+        all_transitions_indexed = dict()
+        for i in range(len(self.all_trajectories)):
+            for j in range(1, len(self.all_trajectories[i])):
+                transition = [self.all_trajectories[i][j-1], self.all_trajectories[i][j]]
+                time_of_transition = self.mean_transition_time(transition[0][1], transition[1][1])
+                day_of_transition = self.getUnixDay(time_of_transition)
+                timebin = self.timebin_of_day(time_of_transition)
+                transition_str = transition[0][0] + "->" + transition[1][0]
+                
+                if day_of_transition in all_transitions_indexed:
+                    if timebin in all_transitions_indexed[day_of_transition]:
+                        all_transitions_indexed[day_of_transition][timebin].append(transition_str)
+                    else:
+                        all_transitions_indexed[day_of_transition][timebin] = [transition_str]
+                else:
+                    all_transitions_indexed[day_of_transition] = {timebin: [transition_str]}
+        self.all_transitions_indexed = all_transitions_indexed           
+
+    def count_incoming(self, x, arr):
+        count = 0
+        for t in arr:
+            if t.split("->")[1] == x:
+                count += 1
+        return count
+
+    def count_outgoing(self, x, arr):
+        count = 0
+        for t in arr:
+            if t.split("->")[0] == x:
+                count += 1
+        return count
+
+    def calculate_3features(self, transitions):
+        feature1 = dict()
+        feature2 = dict()
+        feature3 = dict()
+        aggregation = dict()
+
+        for t in transitions:
+            if t in feature1:
+                feature1[t] += 1
+            else:
+                feature1[t] = 1
+        for t in transitions:
+            split_str = t.split("->")
+            if split_str[1] in feature2:
+                feature2[split_str[1]] += 1
+            else:
+                feature2[split_str[1]] = 1
+            if split_str[0] in feature3:
+                feature3[split_str[0]] += 1
+            else:
+                feature3[split_str[0]] = 1
+
+        for t in feature1:
+            split_str = t.split("->")
+            agg = [feature1[t], feature1[t]/feature2[split_str[1]], feature1[t]/feature3[split_str[0]]]
+            aggregation[t] = agg
+
+        return aggregation
 
     def euclidean_diff(self, x, y):
         s = 0.0
@@ -138,115 +94,70 @@ class STO:
             s += (x[i] - y[i])**2
         return s**0.5
 
-    def retrieve_stats(self, data, week, day_hour, transition):
-        stats = None
-        try:
-            stats = data[week][day_hour][transition]
-        except:
-            stats = None
-        return stats
+    def calculate_min_distort(self, x, array):
+        return min([self.euclidean_diff(x, y) for y in array])
+    
+    def calculate_features(self):
+        transitions_4features = self.all_transitions_indexed.copy()
+        for d in transitions_4features:
+            for h in transitions_4features[d]:
+                t_dict = dict()
+                for t in transitions_4features[d][h]:
+                    t_dict[t] = []
+                transitions_4features[d][h] = t_dict
+        for i in range(len(self.all_transitions_indexed.keys())):
+            d = list(self.all_transitions_indexed.keys())[i]
+            for h in self.all_transitions_indexed[d]:
+                _3features = self.calculate_3features(self.all_transitions_indexed[d][h])
+                _3features_for_window = [_3features]
+                for w in range(-self.W, self.W+1):
+                    if i + w >= 0 and w != 0 and i + w < len(self.all_transitions_indexed.keys()) and i+w in self.all_transitions_indexed and h in self.all_transitions_indexed[i+w]:
+                        _3features_for_window.append(self.calculate_3features(self.all_transitions_indexed[i+w][h]))
+                for transition in _3features:
+                    minDistort = self.calculate_min_distort(_3features[transition], [_3f[transition] for _3f in _3features_for_window])
+                    transitions_4features[d][h][transition] = _3features[transition] + [minDistort]
+        self.transitions_4features =  transitions_4features
 
-    def add_min_distort(self, transition, week, day_hour):
-        feature_arrays = []
-        for w in range(1, self.W + 1):
-            transition_stats_pos = self.retrieve_stats(
-                self.all_transitions_indexed, week + w, day_hour, transition)
-            if transition_stats_pos == None:
-                transition_stats_pos = {'passing': 0, 'outgoing_ratio': 0, 'incoming_ratio': 0}
-            feature_arrays.append([
-                transition_stats_pos['passing'],
-                transition_stats_pos['outgoing_ratio'],
-                transition_stats_pos['incoming_ratio']
-            ])
-            transition_stats_neg = self.retrieve_stats(
-                self.all_transitions_indexed, week - w, day_hour, transition)
-            if transition_stats_neg == None:
-                transition_stats_neg = {'passing': 0, 'outgoing_ratio': 0, 'incoming_ratio': 0}
-            feature_arrays.append([
-                transition_stats_neg['passing'],
-                transition_stats_neg['outgoing_ratio'],
-                transition_stats_neg['incoming_ratio']
-            ])
+    def outlier_transition_detection(self):
+        for d in self.transitions_4features:
+            for h in self.transitions_4features[d]:
+                X = list(self.transitions_4features[d][h].values())
+                print(X[0])
+                S = np.array([x[:3] for x in X])
+                T = [[x[3]] for x in X]
 
-        transition_stats = self.all_transitions_indexed[week][day_hour][
-            transition]
-        transition_stats = [
-            transition_stats['passing'], transition_stats['outgoing_ratio'],
-            transition_stats['incoming_ratio']
-        ]
+                # Covariance matrix
+                covariance  = np.cov(S , rowvar=False)
 
-        distorts = [
-            self.euclidean_diff(arr, transition_stats)
-            for arr in feature_arrays
-        ]
-        min_distort = min(distorts)
-        self.all_transitions_indexed[week][day_hour][transition][
-            'min_distort'] = min_distort
+                # Covariance matrix power of -1
+                covariance_pm1 = np.linalg.matrix_power(covariance, -1)
 
-    def calculate_all_min_distorts(self):
-        for week in self.all_transitions_indexed.keys():
-            for day_hour in self.all_transitions_indexed[week].keys():
-                for transition in self.all_transitions_indexed[week][
-                        day_hour].keys():
-                    self.add_min_distort(transition, week, day_hour)
+                # Center point
+                centerpoint = np.mean(S , axis=0)
 
-    def cluster_groups(self):
-        for week in self.all_transitions_indexed.keys():
-            for day_hour in self.all_transitions_indexed[week].keys():
-                transition_features = []
-                for transition in self.all_transitions_indexed[week][
-                        day_hour].keys():
-                    transition_dict = self.all_transitions_indexed[week][day_hour][transition]
-                    transition_list = [transition_dict['passing'], transition_dict['outgoing_ratio'], transition_dict['incoming_ratio']]
-                    transition_features.append(
-                        [transition] + transition_list)
-                dbscan = DBSCAN(eps=0.1, min_samples=5)
-                transitions = [t[0] for t in transition_features]
-                dbscan.fit([t[1:] for t in transition_features])
-                labels = []
-                for l in dbscan.labels_:
-                    if l >= 0:
-                        labels.append(0)
-                    else:
-                        labels.append(1)
+                distances = []
+                for val in S:
+                    p1 = val
+                    p2 = centerpoint
+                    distance = (p1-p2).T.dot(covariance_pm1).dot(p1-p2)
+                    distances.append(distance)
+                distances = np.array(distances)
 
-                transitions_with_labels = dict()
-                for i in range(len(transitions)):
-                    transitions_with_labels[transitions[i]] = labels[i]
-                self.labels_indexed[str(week) + 'w' +
-                                    day_hour] = transitions_with_labels
+                # Cutoff (threshold) value from Chi-Sqaure Distribution for detecting outliers 
+                cutoff = chi2.ppf(0.95, S.shape[1])
+
+                # Index of outliers
+                outlierIndexes = np.where(distances > cutoff)
+                print(len(S), len(outlierIndexes))
+
 
     def fit(self):
-        self.index_trajectories()
         self.index_transitions()
-        self.calculate_all_min_distorts()
-        self.cluster_groups()
+        self.calculate_features()
+        self.outlier_transition_detection()
 
     def predict(self, X):
         labels = []
-
-        trips = [t['trip'] for t in X]
-        trips = self.process_trips_transform(trips)
-        for i in range(len(X)):
-            X[i]['trip'] = trips[i]
-
-        X = self.transform_trajectories_by_date_scaler(X) 
-
-        for x in X:
-            trip = x['trip']
-            week = x['week_id']
-            day_hour = x['day_hour']
-            transitions = []
-            for i in range(len(trip) - 1):
-                transitions.append(trip[i] + ',' + trip[i + 1])
-            transition_labels = [
-                self.labels_indexed[str(week) + 'w' + day_hour][tr]
-                for tr in transitions
-            ]
-            if sum(transition_labels) > 0:
-                labels.append(1)
-            else:
-                labels.append(0)
         
         return labels
 
