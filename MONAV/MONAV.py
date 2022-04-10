@@ -2,11 +2,11 @@ import os
 import geopy.distance
 import networkx as nx
 import osmnx as ox
+import tqdm
 ox.config(use_cache=True, log_console=False)
 import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
-
 
 all_data = []
 
@@ -57,7 +57,7 @@ def shortest_path(G, start, finish):
     
 
 dists = []
-for trajectory in all_data:
+for trajectory in tqdm.tqdm(all_data):
     dist = trajectory_distance(trajectory)
     shortest = shortest_path(G, trajectory[0], trajectory[-1]) / 1000
     if shortest > 0:

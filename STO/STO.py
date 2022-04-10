@@ -24,7 +24,7 @@ class STO:
     def timebin_of_day(self, t):
         dt = datetime.datetime.fromtimestamp(t)
         total_seconds = 3600*dt.hour + 60*dt.minute + dt.second
-        return total_seconds%self.T
+        return int(total_seconds/self.T)
 
     def index_transitions(self):
         all_transitions_indexed = dict()
@@ -123,6 +123,7 @@ class STO:
         print(len(list(self.all_transitions_indexed.keys())))
         s = 0
         for d in self.transitions_4features:
+            print(list(self.transitions_4features[d].keys()))
             s += len(list(self.transitions_4features[d].values()))
         print(s)
         s = 0
