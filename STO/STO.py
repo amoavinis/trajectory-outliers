@@ -119,36 +119,50 @@ class STO:
         self.transitions_4features =  transitions_4features
 
     def outlier_transition_detection(self):
+        print(len(list(self.transitions_4features.keys())))
+        print(len(list(self.all_transitions_indexed.keys())))
+        s = 0
+        for d in self.transitions_4features:
+            s += len(list(self.transitions_4features[d].values()))
+        print(s)
+        s = 0
+        for d in self.all_transitions_indexed:
+            s += len(list(self.all_transitions_indexed[d].values()))
+        print(s)
         for d in self.transitions_4features:
             for h in self.transitions_4features[d]:
                 X = list(self.transitions_4features[d][h].values())
-                print(X[0])
-                S = np.array([x[:3] for x in X])
-                T = [[x[3]] for x in X]
+                if len(X) > 1:
+                    #print(X)
+                    S = np.array([x[:3] for x in X])
+                    T = [[x[3]] for x in X]
 
-                # Covariance matrix
-                covariance  = np.cov(S , rowvar=False)
+                    # Covariance matrix
+                    covariance = np.cov(S, rowvar=False)
 
-                # Covariance matrix power of -1
-                covariance_pm1 = np.linalg.matrix_power(covariance, -1)
+                    # Covariance matrix power of -1
+                    try:
+                        covariance_pm1 = np.linalg.matrix_power(covariance, -1)
+                    except:
+                        continue
 
-                # Center point
-                centerpoint = np.mean(S , axis=0)
+                    # Center point
+                    centerpoint = np.mean(S, axis=0)
 
-                distances = []
-                for val in S:
-                    p1 = val
-                    p2 = centerpoint
-                    distance = (p1-p2).T.dot(covariance_pm1).dot(p1-p2)
-                    distances.append(distance)
-                distances = np.array(distances)
+                    distances = []
+                    for val in S:
+                        p1 = val
+                        p2 = centerpoint
+                        distance = (p1-p2).T.dot(covariance_pm1).dot(p1-p2)
+                        distances.append(distance)
+                    distances = np.array(distances)
 
-                # Cutoff (threshold) value from Chi-Sqaure Distribution for detecting outliers 
-                cutoff = chi2.ppf(0.95, S.shape[1])
+                    # Cutoff (threshold) value from Chi-Sqaure Distribution for detecting outliers 
+                    cutoff = chi2.ppf(0.95, S.shape[1])
 
-                # Index of outliers
-                outlierIndexes = np.where(distances > cutoff)
-                print(len(S), len(outlierIndexes))
+                    # Index of outliers
+                    outlierIndexes = np.where(distances > cutoff)
+                    print(len(S), len(outlierIndexes))
 
 
     def fit(self):
