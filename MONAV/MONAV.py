@@ -1,4 +1,4 @@
-import os
+import pickle
 import geopy.distance
 import networkx as nx
 import osmnx as ox
@@ -8,30 +8,14 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
 
-all_data = []
+dataset = "geolife"
+data_file = "trajectories_labeled_" + dataset + ".pkl"
+all_data = pickle.load(open(data_file, "rb"))
 
-#DATA_PREFIX = "release/taxi_log_2008_by_id/"
-DATA_PREFIX = "Datasets/Geolife Trajectories 1.3/Data/"
+X = [t[0] for t in all_data]
+y = [t[1] for t in all_data]
+X = [[p[:2][::-1] for p in t] for t in X]
 
-def process_file(f):
-    file = open(f, 'r')
-    lines = file.readlines()[6:]
-
-    result = []
-
-    for line in lines:
-        split_line = line.split(",")
-        latitude = float(split_line[0])
-        longitude = float(split_line[1])
-        result.append((latitude, longitude))
-
-    return result
-
-for i in os.listdir(DATA_PREFIX)[:20]:
-    for j in os.listdir(DATA_PREFIX+i+'/Trajectory/'):
-        all_data.append(process_file(DATA_PREFIX+i+'/Trajectory/'+j))
-
-#print(len(all_data))
 # get a graph
 G = ox.graph_from_place('Beijing, China', network_type='drive')
 
@@ -54,14 +38,14 @@ def shortest_path(G, start, finish):
         return length
     except Exception:
         return 0
-    
 
 dists = []
-for trajectory in tqdm.tqdm(all_data):
+for trajectory in tqdm.tqdm(X):
     dist = trajectory_distance(trajectory)
     shortest = shortest_path(G, trajectory[0], trajectory[-1]) / 1000
     if shortest > 0:
-        print(dist/shortest)
-    dists.append(dist)
-plt.hist(dists, 10)
-plt.show()
+        #print(dist/shortest)
+        dists.append(dist)
+pickle.dump(dists, open("monav_dists_geolife.pkl", "wb"))
+#plt.hist(dists, 10)
+#plt.show()
