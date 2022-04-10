@@ -2,3 +2,5 @@
 Datasets
 *.pkl
 *.json
+*.pyc
+*/__pycache__
