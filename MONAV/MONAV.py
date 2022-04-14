@@ -3,10 +3,13 @@ import geopy.distance
 import networkx as nx
 import osmnx as ox
 import tqdm
-ox.config(use_cache=True, log_console=False)
+#ox.config(use_cache=True, log_console=False)
 import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
+import os
+from sklearn.metrics import accuracy_score, f1_score
+
 
 dataset = "geolife"
 data_file = "trajectories_labeled_" + dataset + ".pkl"
@@ -43,15 +46,24 @@ def shortest_path(G, start, finish):
         return 0
 
 dists = []
-i = 0
-for trajectory in tqdm.tqdm(X[4000:4100]):
-    dist = trajectory_distance(trajectory)
-    shortest = shortest_path(G, trajectory[0], trajectory[-1])
-    ratio = 0
-    if shortest > 0:
-        ratio = dist/shortest
-    dists.append((trajectory, ratio, y[i]))
-    i += 1
-pickle.dump(dists, open("monav_dists_"+dataset+".pkl", "wb"))
-#plt.hist(dists, 10)
-#plt.show()
+if os.path.exists("monav_dists_"+dataset+".pkl"):
+    dists = pickle.load(open("monav_dists_"+dataset+".pkl", "rb"))
+else:
+    i = 0
+    for trajectory in tqdm.tqdm(X):
+        dist = trajectory_distance(trajectory)
+        shortest = shortest_path(G, trajectory[0], trajectory[-1])
+        ratio = 0
+        if shortest > 0:
+            ratio = dist/shortest
+        dists.append((trajectory, ratio, y[i]))
+        i += 1
+    pickle.dump(dists, open("monav_dists_"+dataset+".pkl", "wb"))
+
+threshold = 20
+
+outputs = [d[1] for d in dists]
+y_pred = [1 if x > threshold else 0 for x in outputs]
+
+print("Accuracy score:", accuracy_score(y, y_pred))
+print("F1 score:", f1_score(y, y_pred, average="macro")
