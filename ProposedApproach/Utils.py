@@ -1,11 +1,16 @@
 import geopy.distance
 from math import sqrt
 
+def euclidean(A, B):
+    dist = [(a - b)**2 for a, b in zip(A, B)]
+    dist = sqrt(sum(dist))
+    return dist
+
 def average_distance_of_trips(t1, t2, geo_coords=False):
     D = []
     for p1 in t1:
         for p2 in t2:
-            d = distance_of_line([p1, p2]) if geo_coords else sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+            d = distance_of_line([p1, p2]) if geo_coords else euclidean(p1, p2)
             D.append(d)
     return sum(D)/len(D)
 
