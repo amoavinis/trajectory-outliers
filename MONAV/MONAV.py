@@ -9,9 +9,15 @@ import warnings
 warnings.filterwarnings("ignore")
 import os
 from sklearn.metrics import accuracy_score, f1_score
+import argparse
 
+parser = argparse.ArgumentParser(description="Train and predict using the MONAV-Ch model.")
+parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
+parser.add_argument("--threshold", help="The total distance over minimum ppath distance ratio threshold", default="20")
+args = parser.parse_args()
 
-dataset = "geolife"
+dataset = args.dataset
+threshold = int(args.threshold)
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 all_data = pickle.load(open(data_file, "rb"))
 
@@ -43,7 +49,7 @@ def shortest_path(G, start, finish):
         return length
     except Exception as e:
         print(e)
-        return 0
+        return 10000
 
 dists = []
 if os.path.exists("monav_dists_"+dataset+".pkl"):
@@ -60,10 +66,9 @@ else:
         i += 1
     pickle.dump(dists, open("monav_dists_"+dataset+".pkl", "wb"))
 
-threshold = 20
 
 outputs = [d[1] for d in dists]
 y_pred = [1 if x > threshold else 0 for x in outputs]
 
 print("Accuracy score:", accuracy_score(y, y_pred))
-print("F1 score:", f1_score(y, y_pred, average="macro")
+print("F1 score:", f1_score(y, y_pred, average="macro"))
