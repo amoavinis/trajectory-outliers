@@ -1,10 +1,15 @@
 import geopy.distance
 from math import sqrt
+from hausdorff import hausdorff_distance
+import numpy as np
 
 def euclidean(A, B):
     dist = [(a - b)**2 for a, b in zip(A, B)]
     dist = sqrt(sum(dist))
     return dist
+
+def hausdorff_dist(t1, t2):
+    return hausdorff_distance(t1, t2)
 
 def average_distance_of_trips(t1, t2, geo_coords=False):
     D = []
@@ -14,14 +19,16 @@ def average_distance_of_trips(t1, t2, geo_coords=False):
             D.append(d)
     return sum(D)/len(D)
 
-def distance_of_line(transition):
-    return geopy.distance.great_circle(list(reversed(transition[0])), list(reversed(transition[1]))).meters
+def distance_of_line(a, b):
+    a = np.flip(a)
+    b = np.flip(b)
+    return geopy.distance.great_circle(a, b).meters
 
 def distance_of_trajectory(traj, geo_coords=False):
     dist = 0.0
     for i in range(len(traj) - 1):
         if geo_coords:
-            dist += distance_of_line([traj[i], traj[i+1]])
+            dist += distance_of_line(traj[i], traj[i+1])
         else:
             dist += sqrt((traj[i][0]-traj[i+1][0])**2 + (traj[i][1]-traj[i+1][1])**2)
     return dist
