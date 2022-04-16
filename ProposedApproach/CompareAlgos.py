@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
 from Utils import *
 from sklearn.cluster import DBSCAN
-from random import sample
+from random import sample, seed
 from SimplifyTrajectories import Simplifier
 from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
@@ -19,7 +19,8 @@ dataset = args.dataset
 
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
-#data = sample(data, 1000)
+seed(1997)
+sampled = sample(data, int(len(data)/10) if len(data) > 10000 else len(data))
 X = [[p[:2] for p in d[0]] for d in data]
 y = [d[1] for d in data]
 
@@ -47,6 +48,9 @@ else:
     print('Scaling distances...')
     distances = [[distance_of_trajectory(t)] for t in X]
     distance_scaler = MinMaxScaler()
+    sampled_X = [[p[:2] for p in d[0]] for d in sampled]
+    sampled_distances = [[distance_of_trajectory(t)] for t in sampled_X]
+    distance_scaler.fit(sampled_distances)
     distances = distance_scaler.fit_transform(distances)
 
     print("Scaling Hausdorff pairwise distances...")
