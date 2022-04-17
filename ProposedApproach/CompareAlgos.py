@@ -20,7 +20,6 @@ dataset = args.dataset
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
 seed(1997)
-sampled = sample(data, int(len(data)/10) if len(data) > 10000 else len(data))
 X = [[p[:2] for p in d[0]] for d in data]
 y = [d[1] for d in data]
 
@@ -39,6 +38,8 @@ print("Average length of simplified sequences:", average_length_of_sequences(X))
 
 distances = []
 distances_pairwise = dict()
+distance_scaler = MinMaxScaler()
+distances_pairwise_scaler = MinMaxScaler()
 
 if os.path.exists("main_trajectory_features_"+dataset+".pkl"):
     loaded = pickle.load(open("main_trajectory_features_"+dataset+".pkl", "rb"))
@@ -47,34 +48,31 @@ if os.path.exists("main_trajectory_features_"+dataset+".pkl"):
 else:
     print('Scaling distances...')
     distances = [[distance_of_trajectory(t)] for t in X]
-    distance_scaler = MinMaxScaler()
-    sampled_X = [[p[:2] for p in d[0]] for d in sampled]
-    sampled_distances = [[distance_of_trajectory(t)] for t in sampled_X]
-    distance_scaler.fit(sampled_distances)
     distances = distance_scaler.fit_transform(distances)
 
     print("Scaling Hausdorff pairwise distances...")
-    distances_pairwise = dict()
+    #distances_pairwise = dict()
     distances_pairwise_list = []
-    for i in tqdm(range(len(X))):
-        temp_dict = dict()
-        for j in range(len(X)):
+    sampled = sample(data, int(len(data)/5) if len(data) > 10000 else len(data))
+    for i in tqdm(range(len(sampled))):
+        #temp_dict = dict()
+        for j in range(len(sampled)):
             d = hausdorff_dist(np.array(X[i]), np.array(X[j]))
             distances_pairwise_list.append([d])
-            temp_dict[j] = d
-        distances_pairwise[i] = temp_dict
-    distances_pairwise_scaler = MinMaxScaler()
-    distances_pairwise_list = distances_pairwise_scaler.fit_transform(distances_pairwise_list)
-    for i in range(len(X)):
-        for j in range(len(X)):
-            distances_pairwise[i][j] = distances_pairwise_list[i*len(X) + j]
+            #temp_dict[j] = d
+        #distances_pairwise[i] = temp_dict
+    
+    distances_pairwise_scaler.fit(distances_pairwise_list)
+    #for i in range(len(X)):
+    #    for j in range(len(X)):
+    #        distances_pairwise[i][j] = distances_pairwise_list[i*len(X) + j]
 
     pickle.dump((distances, distances_pairwise), open("main_trajectory_features_"+dataset+".pkl", "rb"))
 
 def distance_function(t1, t2):
     trip1 = np.array(X[int(t1[0])])
     trip2 = np.array(X[int(t2[0])])
-    dist = distances_pairwise[int(t1[0])][int(t2[0])]
+    dist = distance_scaler.transform([hausdorff_dist(trip1, trip2)])
     start_dx = trip1[0][0] - trip2[0][0]
     end_dx = trip1[-1][0] - trip2[-1][0]
     start_dy = trip1[0][1] - trip2[0][1]
