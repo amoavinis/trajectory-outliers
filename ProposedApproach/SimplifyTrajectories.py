@@ -1,5 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from tqdm import tqdm
+
 class Simplifier:
     def __init__(self, threshold):
         self.threshold = threshold
@@ -35,7 +36,7 @@ class Simplifier:
         return y
 
     def simplify(self, X):
-        res =  [self.simplify_trajectory(x) for x in X]
-        #plt.hist(self.angles, bins=10)
-        #plt.show()
+        res = []
+        for x in tqdm(X):
+            res.append(self.simplify_trajectory(x))
         return res
