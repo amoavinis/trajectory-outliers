@@ -11,12 +11,11 @@ def euclidean(A, B):
 def hausdorff_dist(t1, t2):
     return hausdorff_distance(t1, t2)
 
-def average_distance_of_trips(t1, t2, geo_coords=False):
+def average_distance_of_trips(t1, t2):
     D = []
     for p1 in t1:
         for p2 in t2:
-            d = distance_of_line([p1, p2]) if geo_coords else euclidean(p1, p2)
-            D.append(d)
+            D.append(euclidean(p1, p2))
     return sum(D)/len(D)
 
 def distance_of_line(a, b):
@@ -41,16 +40,3 @@ def slant(traj):
         return sine
     else:
         return 0
-
-''' def speeds_in_traj(traj):
-    speeds = []
-    for i in range(len(traj)-1):
-        dx = distance_of_line([traj[i][:2], traj[i+1][:2]])
-        dt = traj[i+1][2] - traj[i][2]
-        if dt > 0:
-            speeds.append(dx/dt)
-    return {
-        'min_speed': min(speeds),
-        'max_speed': max(speeds),
-        'avg_speed': sum(speeds)/len(speeds)
-    } '''
