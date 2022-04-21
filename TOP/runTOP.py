@@ -47,5 +47,5 @@ print("Fitting complete.")
 
 y_pred = top.predict(X)
 
-print("F1 score:", f1_score(y, y_pred, average='macro'))
 print("Accuracy:", accuracy_score(y, y_pred))
+print("F1 score:", f1_score(y, y_pred, average='macro'))
