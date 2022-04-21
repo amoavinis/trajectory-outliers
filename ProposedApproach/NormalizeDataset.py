@@ -169,8 +169,8 @@ data_prefixes = {
     "tdrive": "Datasets/T-Drive/taxi_log_2008_by_id/"
 }
 if len(sys.argv) > 2:
-    grid_scale = int(sys.argv[1])
-    dataset = sys.argv[2]
+    grid_scale = int(sys.argv[2])
+    dataset = sys.argv[1]
 
 nm = Normalizer(dataset, os.getcwd()+"/"+data_prefixes[dataset], grid_scale)
 nm.preprocess()
