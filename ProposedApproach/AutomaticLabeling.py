@@ -50,7 +50,7 @@ class Labeling:
         return jaccard_sq
 
     def clustering_trajectories(self):
-        filtered_sd = self.group_by_sd_pairs(self.all_trajectories, 2)
+        filtered_sd = self.group_by_sd_pairs(self.all_trajectories, 5)
         print("Total number of trajectories:", len(self.all_trajectories))
         print("Number of step 1 outliers:", len(self.outliers))
         score = []

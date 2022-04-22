@@ -57,7 +57,8 @@ class Normalizer:
                     trajectory = self.process_file(i_path+j)
                     valid = True
                     for p in trajectory:
-                        if p[0] < 115.5  or p[0] > 117 or p[1] < 39.3 or p[1] > 40.8:
+                        #if p[0] < 115.5 or p[0] > 117.5 or p[1] < 39.4 or p[1] > 40.5:
+                        if p[0] < 114.5 or p[0] > 119.5 or p[1] < 38 or p[1] > 43:
                             valid = False
                             break
                     if valid and len(trajectory) > 0:
@@ -66,7 +67,7 @@ class Normalizer:
                 trajectory = self.process_file(self.data_path+i)
                 valid = True
                 for p in trajectory:
-                    if p[0] < 115.5 or p[0] > 117 or p[1] < 39.3 or p[1] > 40.8:
+                    if p[0] < 114.5 or p[0] > 119.5 or p[1] < 38 or p[1] > 43:
                         valid = False
                         break
                 if valid and len(trajectory) > 0:
@@ -125,6 +126,20 @@ class Normalizer:
             self.create_trajectories()
             pickle.dump(self.all_trajectories, open("trajectories_raw_"+self.dataset+".pkl", "wb"))
             print("Trajectories created.")
+
+        plot = False
+        # Uncomment below line to plot the GPS points  
+        # plot = True
+        
+        if plot:
+            all_points = self.take_points()
+            x = [p[0] for p in all_points]
+            y = [p[1] for p in all_points]
+            plt.scatter(x, y)
+            plt.xlabel("Longitude")
+            plt.ylabel("Latitude")
+            plt.show()
+        
         print("Fitting point scaler...")
         self.fit_point_scaler()
         print("Fitted point scaler.")
@@ -137,8 +152,9 @@ class Normalizer:
     def trajectory_statistics(self):
         simple_lengths = [len(t[0]) for t in self.trajectories_with_grid]
         grid_lengths = [len(t[1]) for t in self.trajectories_with_grid]
-        #print("Lengths of simple paths:", Counter(simple_lengths))
+
         print("Average simple path length:", sum(simple_lengths)/len(simple_lengths))
+        print("Average grid path length:", sum(grid_lengths)/len(grid_lengths))
         print("Lengths of grid paths:", Counter(grid_lengths))
 
     def analyze_sd_pairs(self):
@@ -174,5 +190,5 @@ if len(sys.argv) > 2:
 
 nm = Normalizer(dataset, os.getcwd()+"/"+data_prefixes[dataset], grid_scale)
 nm.preprocess()
-#nm.trajectory_statistics()
+nm.trajectory_statistics()
 #nm.analyze_sd_pairs()
