@@ -8,7 +8,7 @@ class TOPClassifier:
         self.all_trajectories = all_trajectories
         self.search_spaces = search_spaces
         self.freq_events = freq_events
-        self.global_availability = set()
+        self.global_unavailability = set()
         self.minSup = minSup
         self.freq_patterns = []
         self.seqGap = seqGap
@@ -20,14 +20,14 @@ class TOPClassifier:
                 max_len = len(x)
         return max_len
 
-    def produceSubsequences(self, seq, current_len, global_availability):
+    def produceSubsequences(self, seq, current_len, global_unavailability):
         results = []
         if len(seq) >= current_len:
             permutations = list(itertools.permutations(seq[1:]))
             permutations = [[seq[0]]+list(p) for p in permutations]
 
             for x in permutations:
-                if all([y[0] not in global_availability for y in x]):
+                if all([y[0] not in global_unavailability for y in x]):
                     results.append(x)
         return results
 
@@ -43,13 +43,13 @@ class TOPClassifier:
             usedPositions.add(x[1])
         return usedPositions
 
-    def constructCF(self, search_space, current_len, minSup, global_availability):
+    def constructCF(self, search_space, current_len, minSup, global_unavailability):
         subseqs = dict()
         usedPositions = dict()
         freq_seqs = []
         subs = []
         for seq in search_space:
-            subs.extend(self.produceSubsequences(seq, current_len, global_availability))
+            subs.extend(self.produceSubsequences(seq, current_len, global_unavailability))
         for seq in subs:
             if self.notUsed(seq, usedPositions.get(str(self.getPatternFromOccurrence(seq)))):
                 if not str(self.getPatternFromOccurrence(seq)) in subseqs:
@@ -75,7 +75,7 @@ class TOPClassifier:
     def updatePrefix(self, search_space):
         new_search_space = []
         for elem in search_space:
-            if any([x[1] not in self.global_availability for x in elem]):
+            if any([x[1] not in self.global_unavailability for x in elem]):
                 new_search_space.append(elem)
         return new_search_space
 
@@ -107,9 +107,9 @@ class TOPClassifier:
                 if not p_set in self.search_spaces:
                     continue
                 if self.max_subsequence(self.search_spaces[p_set]) >= current_len:
-                    cur_freq.extend(self.constructCF(self.search_spaces[p_set], current_len, self.minSup, self.global_availability))
+                    cur_freq.extend(self.constructCF(self.search_spaces[p_set], current_len, self.minSup, self.global_unavailability))
             for e in self.cur_freq_events(cur_freq):
-                self.global_availability.add(e)
+                self.global_unavailability.add(e)
             for p_set in prefix_set:
                 if not p_set in self.search_spaces:
                     continue
