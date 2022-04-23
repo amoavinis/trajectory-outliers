@@ -3,8 +3,8 @@ from CreateSearchSpaces import Preprocessor
 from TOP import TOPClassifier
 import pickle
 import argparse
-from sklearn.metrics import f1_score, accuracy_score
-#from collections import Counter
+from sklearn.metrics import confusion_matrix, f1_score, accuracy_score
+from time import time
 
 parser = argparse.ArgumentParser(description="Train and predict using the TOP model.")
 parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
@@ -32,6 +32,7 @@ X = [scaler.trajectory_to_grid(scaler.transform_trajectory(x), grid_scale) for x
 
 preprocessor = Preprocessor(X, minSup, seqGap)
 
+t = time()
 print("Preprocessing started")
 preprocessor.preprocess()
 print("Preprocessing ended")
@@ -41,6 +42,7 @@ top = TOPClassifier(preprocessor.all_trajectories, preprocessor.search_spaces,
 print("Fitting...")
 top.fit()
 print("Fitting complete.")
+print("Fitting time:", round(time() - t, 2), "seconds")
 
 #freqPatterns = top.freq_patterns
 #print(Counter([len(cf) for cf in freqPatterns]))
@@ -49,3 +51,4 @@ y_pred = top.predict(X)
 
 print("Accuracy:", accuracy_score(y, y_pred))
 print("F1 score:", f1_score(y, y_pred, average='macro'))
+print(confusion_matrix(y, y_pred))
