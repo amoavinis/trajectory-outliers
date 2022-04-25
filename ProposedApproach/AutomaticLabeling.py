@@ -105,7 +105,7 @@ parser.add_argument("--minThr", help="Count threshold for acceptable sd-pair siz
 args = parser.parse_args()
 
 dataset = args.dataset
-thr = args.thr
-minThr = args.minThr
+thr = float(args.thr)
+minThr = int(args.minThr)
 l = Labeling(dataset, thr, minThr)
 l.start()
