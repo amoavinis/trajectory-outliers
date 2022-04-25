@@ -6,13 +6,15 @@ from scipy.cluster.hierarchy import fcluster
 import pickle
 
 class Labeling:
-    def __init__(self, dataset):
+    def __init__(self, dataset, thr, minThr):
         self.all_trajectories = []
         self.paths = []
         self.dist_clustering = 0.5
         self.inliers = []
         self.outliers = []
         self.dataset = dataset
+        self.thr = thr
+        self.minThr = minThr
 
     def group_by_sd_pairs(self, trajectories, threshold):
         sd_pairs = dict()
@@ -50,7 +52,7 @@ class Labeling:
         return jaccard_sq
 
     def clustering_trajectories(self):
-        filtered_sd = self.group_by_sd_pairs(self.all_trajectories, 5)
+        filtered_sd = self.group_by_sd_pairs(self.all_trajectories, self.minThr)
         print("Total number of trajectories:", len(self.all_trajectories))
         print("Number of step 1 outliers:", len(self.outliers))
         score = []
@@ -70,7 +72,7 @@ class Labeling:
                 else:
                     clusters_grouped[clusters[i]] = [filtered_sd[k][i]]
             for cluster in clusters_grouped:
-                if len(clusters_grouped[cluster])/len(filtered_sd[k]) > 0.03:
+                if len(clusters_grouped[cluster])/len(filtered_sd[k]) > self.thr:
                     self.inliers.extend([t[0] for t in clusters_grouped[cluster]])
                 else:
                     self.outliers.extend([t[0] for t in clusters_grouped[cluster]])
@@ -98,8 +100,12 @@ class Labeling:
 
 parser = argparse.ArgumentParser(description="Automatic annotation of the selected dataset.")
 parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
+parser.add_argument("--thr", help="Percentage threshold for acceptable cluster size.", default="0.03")
+parser.add_argument("--minThr", help="Count threshold for acceptable sd-pair size.", default="5")
 args = parser.parse_args()
 
 dataset = args.dataset
-l = Labeling(dataset)
+thr = args.thr
+minThr = args.minThr
+l = Labeling(dataset, thr, minThr)
 l.start()
