@@ -63,7 +63,7 @@ if os.path.exists("monav_dists_"+dataset+".pkl"):
     dists = pickle.load(open("monav_dists_"+dataset+".pkl", "rb"))
 else:
     # get a graph
-    G = ox.graph_from_place('Beijing, China', network_type='drive_service')
+    G = ox.graph_from_place("Beijing, China", network_type='drive', simplify=True)
 
     # impute missing edge speed and add travel times
     G = ox.add_edge_speeds(G)
