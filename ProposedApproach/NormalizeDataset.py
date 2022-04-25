@@ -1,3 +1,4 @@
+import argparse
 from datetime import datetime
 from CustomScaler import Scaler
 from sklearn.preprocessing import MinMaxScaler
@@ -6,7 +7,6 @@ from tqdm import tqdm
 import os
 from collections import Counter
 from matplotlib import pyplot as plt
-import sys
 
 class Normalizer:
     def __init__(self, dataset, data_path, grid_scale):
@@ -58,7 +58,7 @@ class Normalizer:
                     valid = True
                     for p in trajectory:
                         #if p[0] < 115.5 or p[0] > 117.5 or p[1] < 39.4 or p[1] > 40.5:
-                        if p[0] < 114.5 or p[0] > 119.5 or p[1] < 38 or p[1] > 43:
+                        if p[0] < 115.42 or p[0] > 117.5 or p[1] < 39.4 or p[1] > 41.1:
                             valid = False
                             break
                     if valid and len(trajectory) > 0:
@@ -184,9 +184,16 @@ data_prefixes = {
     "geolife": "Datasets/Geolife Trajectories 1.3/Data/",
     "tdrive": "Datasets/T-Drive/taxi_log_2008_by_id/"
 }
-if len(sys.argv) > 2:
-    grid_scale = int(sys.argv[2])
-    dataset = sys.argv[1]
+
+parser = argparse.ArgumentParser(description="Filter out trajectories and produce the grid representation of the dataset.")
+parser.add_argument("--dataset",
+                    help="Specify the dataset to use",
+                    default="geolife")
+parser.add_argument("--gridScale", help="The number of grid cells per dimension", default="20")
+args = parser.parse_args()
+
+grid_scale = int(args.gridScale)
+dataset = args.dataset
 
 nm = Normalizer(dataset, os.getcwd()+"/"+data_prefixes[dataset], grid_scale)
 nm.preprocess()
