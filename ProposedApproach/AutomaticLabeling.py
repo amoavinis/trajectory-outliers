@@ -1,5 +1,5 @@
 import os
-import sys
+import argparse
 from sklearn.metrics import silhouette_score
 from fastcluster import linkage
 from scipy.cluster.hierarchy import fcluster
@@ -96,9 +96,10 @@ class Labeling:
         print("Total number of inliers:", len(self.inliers))
         print("Total number of outliers:", len(self.outliers))
 
-if len(sys.argv) > 1:
-    dataset = sys.argv[1]
-    p = Labeling(dataset)
-    p.start()
-else:
-    print("Specify dataset...")
+parser = argparse.ArgumentParser(description="Automatic annotation of the selected dataset.")
+parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
+args = parser.parse_args()
+
+dataset = args.dataset
+l = Labeling(dataset)
+l.start()
