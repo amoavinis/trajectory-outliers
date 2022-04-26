@@ -12,7 +12,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description="Train and predict using the DODB model.")
 parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
-parser.add_argument("--W", help="The threshold ratio of total distance over minimum path distance", default="25")
+parser.add_argument("--W", help="The threshold ratio of total distance over minimum path distance", default="15")
 parser.add_argument("--D0", help="D0", default="1000000")
 parser.add_argument("--D1", help="D1", default="1000000")
 args = parser.parse_args()
