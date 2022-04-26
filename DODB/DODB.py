@@ -10,7 +10,7 @@ import os
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 import argparse
 
-parser = argparse.ArgumentParser(description="Train and predict using the MONAV-CH model.")
+parser = argparse.ArgumentParser(description="Train and predict using the DODB model.")
 parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
 parser.add_argument("--W", help="The threshold ratio of total distance over minimum path distance", default="25")
 parser.add_argument("--D0", help="D0", default="1000000")
@@ -59,8 +59,8 @@ def shortest_path(G, start, finish):
         return 10000
 
 dists = []
-if os.path.exists("monav_dists_"+dataset+".pkl"):
-    dists = pickle.load(open("monav_dists_"+dataset+".pkl", "rb"))
+if os.path.exists("dodb_dists_"+dataset+".pkl"):
+    dists = pickle.load(open("dodb_dists_"+dataset+".pkl", "rb"))
 else:
     # get a graph
     G = ox.graph_from_place("Beijing, China", network_type='drive', simplify=True)
