@@ -1,7 +1,6 @@
 import argparse
 from datetime import datetime
 from CustomScaler import Scaler
-from sklearn.preprocessing import MinMaxScaler
 import pickle
 from tqdm import tqdm
 import os
@@ -14,7 +13,6 @@ class Normalizer:
         self.dataset = dataset
         self.all_trajectories = []
         self.scaler = Scaler()
-        self.traj_scaler = MinMaxScaler()
         self.grid_scale = grid_scale
         self.trajectories_with_grid = []
 
