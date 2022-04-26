@@ -86,7 +86,6 @@ class Normalizer:
 
     def fit_point_scaler(self):
         self.scaler.fit(self.take_points())
-        #print(self.scaler.min, self.scaler.max)
 
     def remove_duplicates(self, x):
         y = [x[0]]
@@ -157,29 +156,6 @@ class Normalizer:
         print("Average grid path length:", sum(grid_lengths)/len(grid_lengths))
         print("Lengths of grid paths:", Counter(grid_lengths))
 
-    def analyze_sd_pairs(self):
-        sd_pairs = dict()
-        sd_pairs_list = []
-        for t in self.trajectories_with_grid:
-            s = t[1][0]
-            d = t[1][-1]
-            sd = s+"->"+d
-            sd_pairs_list.append(sd)
-            if sd in sd_pairs:
-                sd_pairs[sd] += 1
-            else:
-                sd_pairs[sd] = 1
-        print(sum(sd_pairs.values())/len(sd_pairs))
-        vals = list(sd_pairs.values())
-        #print(sd_pairs)
-        with open('values', 'w') as f:
-            f.write(str(vals))
-        plt.hist(vals, bins=5)
-        plt.savefig('hist.jpg')
-        #print(Counter(sd_pairs))
-
-dataset = 'geolife'
-grid_scale = 20
 data_prefixes = {
     "geolife": "Datasets/Geolife Trajectories 1.3/Data/",
     "tdrive": "Datasets/T-Drive/taxi_log_2008_by_id/"
@@ -198,4 +174,3 @@ dataset = args.dataset
 nm = Normalizer(dataset, os.getcwd()+"/"+data_prefixes[dataset], grid_scale)
 nm.preprocess()
 nm.trajectory_statistics()
-#nm.analyze_sd_pairs()
