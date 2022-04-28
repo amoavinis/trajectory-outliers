@@ -8,7 +8,7 @@ from time import time
 
 parser = argparse.ArgumentParser(description="Train and predict using the TOP model.")
 parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
-parser.add_argument("--gridScale", help="The number of grid cells per dimension", default="20")
+parser.add_argument("--gridScale", help="The number of grid cells per dimension", default="5")
 parser.add_argument("--minSup", help="The minimum support for a CF pattern", default="5")
 parser.add_argument("--seqGap", help="The seqGap parameter", default="2")
 args = parser.parse_args()
