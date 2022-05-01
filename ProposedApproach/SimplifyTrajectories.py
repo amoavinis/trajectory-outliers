@@ -33,7 +33,7 @@ class Simplifier:
                 y.append(x[i+1])
         y.append(x[-1])
 
-        return y
+        return np.array(y)
 
     def simplify(self, X):
         res = []
