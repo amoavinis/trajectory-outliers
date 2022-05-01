@@ -1,93 +1,95 @@
-import os
 import pickle
 import argparse
 import numpy as np
 from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
-from Utils import *
+from ClusterSegments import ClusterSegments
+from CustomScaler import Scaler
+from Utils import hausdorff_dist
 from sklearn.cluster import DBSCAN
 from random import sample, seed
-from SimplifyTrajectories import Simplifier
-from sklearn.preprocessing import MinMaxScaler
-from tqdm import tqdm
 import pickle
+from time import perf_counter
+from collections import Counter
+seed(1997)
 
-parser = argparse.ArgumentParser(description="Compare performance of clustering algorithms.")
-parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
+parser = argparse.ArgumentParser(
+    description="Compare performance of clustering algorithms.")
+parser.add_argument("--dataset",
+                    help="Specify the dataset to use",
+                    default="geolife")
 args = parser.parse_args()
 
 dataset = args.dataset
 
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
-seed(1997)
+data = sample(data, 1000)
+
 X = [[p[:2] for p in d[0]] for d in data]
-y = [d[1] for d in data]
+y = np.array([d[1] for d in data])
 
 def average_length_of_sequences(sequences):
     s = sum([len(x) for x in sequences])
-    avg = s/len(sequences)
+    avg = s / len(sequences)
     return avg
 
 print("Average length of raw sequences:", average_length_of_sequences(X))
 
-# thresold in rads
-simplifier = Simplifier(150)
-X = simplifier.simplify(X)
+grid_scale = 30
 
-print("Average length of simplified sequences:", average_length_of_sequences(X))
+scaler = Scaler()
+points = []
+for x in X:
+    points.extend(x)
+scaler.fit(points)
+X = [scaler.transform_trajectory(x) for x in X]
+X_grid = [scaler.trajectory_to_grid(x, grid_scale) for x in X]
 
-distances = []
-distances_pairwise = dict()
-distance_scaler = MinMaxScaler()
-distances_pairwise_scaler = MinMaxScaler()
+print("Average length of size "+str(grid_scale)+" grid cell sequences:", average_length_of_sequences(X_grid))
 
-if os.path.exists("main_trajectory_features_"+dataset+".pkl"):
-    loaded = pickle.load(open("main_trajectory_features_"+dataset+".pkl", "rb"))
-    distances = loaded[0]
-    distances_pairwise = loaded[1]
-else:
-    print('Scaling distances...')
-    distances = [[distance_of_trajectory(t)] for t in X]
-    distances = distance_scaler.fit_transform(distances)
+def distance_function_paths(t1, t2):
+    trip1_grid = X_grid[int(t1[0])]
+    trip2_grid = X_grid[int(t2[0])]
+    dist = hausdorff_dist(trip1_grid, trip2_grid)
+    return dist
 
-    print("Scaling Hausdorff pairwise distances...")
-    #distances_pairwise = dict()
-    distances_pairwise_list = []
-    sampled = sample(data, int(len(data)/5) if len(data) > 10000 else len(data))
-    for i in tqdm(range(len(sampled))):
-        #temp_dict = dict()
-        for j in range(len(sampled)):
-            d = hausdorff_dist(np.array(X[i]), np.array(X[j]))
-            distances_pairwise_list.append([d])
-            #temp_dict[j] = d
-        #distances_pairwise[i] = temp_dict
-    
-    distances_pairwise_scaler.fit(distances_pairwise_list)
-    #for i in range(len(X)):
-    #    for j in range(len(X)):
-    #        distances_pairwise[i][j] = distances_pairwise_list[i*len(X) + j]
+indices = np.array(range(len(X)))
+y = y[indices]
 
-    pickle.dump((distances, distances_pairwise), open("main_trajectory_features_"+dataset+".pkl", "rb"))
+dbscan = DBSCAN(eps=1.2, min_samples=2, metric=distance_function_paths)
 
-def distance_function(t1, t2):
-    trip1 = np.array(X[int(t1[0])])
-    trip2 = np.array(X[int(t2[0])])
-    dist = distance_scaler.transform([hausdorff_dist(trip1, trip2)])
-    start_dx = trip1[0][0] - trip2[0][0]
-    end_dx = trip1[-1][0] - trip2[-1][0]
-    start_dy = trip1[0][1] - trip2[0][1]
-    end_dy = trip1[-1][1] - trip2[-1][1]
-    d_slant = (slant(trip1) - slant(trip2))/2
-    d_dist = distances[int(t1[0])] - distances[int(t2[0])]
+t = perf_counter()
 
-    s = dist**2 + start_dx**2 + end_dx**2 + start_dy**2 + end_dy**2 + d_slant**2 + d_dist**2
-    return sqrt(s)
+labels = [0 for _ in indices]#dbscan.fit_predict(indices.reshape((-1, 1)))
+print(Counter(labels))
+print("Fitting time:", perf_counter() - t)
 
-dbscan = DBSCAN(eps=0.2, metric=distance_function)
+y_pred_1 = [1 if l==-1 else 0 for l in labels]
 
-print("Clustering...")
-labels = dbscan.fit_predict(np.array(range(len(X))).reshape((-1, 1)))
-y_pred = [0 if x > -1 else 1 for x in labels]
+cluster_segments = ClusterSegments()
+labels = s=cluster_segments.fit_predict(X)
+
+#minmax = MinMaxScaler()
+#X_features = [trajectory_features(X[i]) for i in indices]
+#X_features = minmax.fit_transform(X_features)
+
+#dbscan = DBSCAN(eps=0.15, min_samples=2)
+#labels = dbscan.fit_predict(X_features)
+#kmeans = CustomKMeans(5)
+#kmeans.fit(X_features)
+#labels = kmeans.predict(X_features)
+
+#print(Counter(labels))
+print("Fitting time:", perf_counter() - t)
+
+y_pred_2 = labels#calculate_labels(labels, -1)
+
+y_pred = []
+for i in range(len(y_pred_1)):
+    if y_pred_2[i] == 1 or y_pred_2[i] == 1:
+        y_pred.append(1)
+    else:
+        y_pred.append(0)
 
 print(accuracy_score(y, y_pred))
 print(f1_score(y, y_pred, average="macro"))
