@@ -1,5 +1,6 @@
+import numpy as np
+
 class Scaler:
-    
     def __init__(self):
         self.min = [100000, 100000]
         self.max = [-100000, -100000]
@@ -22,7 +23,7 @@ class Scaler:
                 for x in X]
 
     def transform_trajectory(self, trajectory):
-        return [self.transform([p])[0] for p in trajectory]
+        return np.array([self.transform([p])[0] for p in trajectory])
 
     def coords_to_grid(self, coords, grid_scale):
         grid_coords = [int(coords[0]*grid_scale), int(coords[1]*grid_scale)]
@@ -45,5 +46,5 @@ class Scaler:
     def trajectory_to_grid(self, trajectory, grid_scale):
         trajectory = [self.coords_to_grid(p, grid_scale) for p in trajectory]
         trajectory = self.remove_repetitions(trajectory)
-        return trajectory
+        return np.array(trajectory)
 
