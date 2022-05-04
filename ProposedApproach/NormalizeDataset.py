@@ -56,7 +56,7 @@ class Normalizer:
                     valid = True
                     for p in trajectory:
                         #if p[0] < 115.5 or p[0] > 117.5 or p[1] < 39.4 or p[1] > 40.5:
-                        if p[0] < 115.42 or p[0] > 117.5 or p[1] < 39.4 or p[1] > 41.1:
+                        if p[0] < 116.1 or p[0] > 116.6 or p[1] < 39.65 or p[1] > 40.3:
                             valid = False
                             break
                     if valid and len(trajectory) > 0:
