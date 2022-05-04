@@ -6,10 +6,10 @@ from scipy.cluster.hierarchy import fcluster
 import pickle
 
 class Labeling:
-    def __init__(self, dataset, thr, minThr):
+    def __init__(self, dataset, thr, minThr, distClustering):
         self.all_trajectories = []
         self.paths = []
-        self.dist_clustering = 0.5
+        self.dist_clustering = distClustering
         self.inliers = []
         self.outliers = []
         self.dataset = dataset
@@ -101,11 +101,13 @@ class Labeling:
 parser = argparse.ArgumentParser(description="Automatic annotation of the selected dataset.")
 parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
 parser.add_argument("--thr", help="Percentage threshold for acceptable cluster size.", default="0.03")
-parser.add_argument("--minThr", help="Count threshold for acceptable sd-pair size.", default="5")
+parser.add_argument("--minThr", help="Count threshold for acceptable sd-pair size.", default="2")
+parser.add_argument("--dist", help="The distance threshold for forming clusters with the complete linkage algorithm.", default="0.5")
 args = parser.parse_args()
 
 dataset = args.dataset
 thr = float(args.thr)
 minThr = int(args.minThr)
-l = Labeling(dataset, thr, minThr)
+distClustering = float(args.dist)
+l = Labeling(dataset, thr, minThr, distClustering)
 l.start()
