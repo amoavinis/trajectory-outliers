@@ -1,15 +1,9 @@
-from hausdorff import hausdorff_distance
 import numpy as np
 
-def hausdorff_dist(t1, t2):
-    return hausdorff_distance(t1, t2)
-
-def average_distance_of_trips(t1, t2):
-    D = []
-    for p1 in t1:
-        for p2 in t2:
-            D.append(np.linalg.norm(p1-p2))
-    return sum(D)/len(D)
+def average_length_of_sequences(sequences):
+    s = sum([len(x) for x in sequences])
+    avg = s / len(sequences)
+    return avg
 
 def distance_of_trajectory(traj):
     dist = 0.0
