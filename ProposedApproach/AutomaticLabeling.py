@@ -102,7 +102,7 @@ parser = argparse.ArgumentParser(description="Automatic annotation of the select
 parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
 parser.add_argument("--thr", help="Percentage threshold for acceptable cluster size.", default="0.03")
 parser.add_argument("--minThr", help="Count threshold for acceptable sd-pair size.", default="2")
-parser.add_argument("--dist", help="The distance threshold for forming clusters with the complete linkage algorithm.", default="0.5")
+parser.add_argument("--dist", help="The distance threshold for forming clusters with the complete linkage algorithm.", default="0.8")
 args = parser.parse_args()
 
 dataset = args.dataset
