@@ -28,6 +28,10 @@ class CustomKMeans:
         threshold = max_outlyingness - abs(
             (mean_outlyingness - (max_outlyingness + min_outlyingness) / 2))
 
-        transformed_labels = [l if l > threshold else -1 for l in labels]
-
+        transformed_labels = []
+        for i, o in enumerate(outlyingness):
+            if o < threshold:
+                transformed_labels.append(labels[i])
+            else:
+                transformed_labels.append(-1)
         return transformed_labels
