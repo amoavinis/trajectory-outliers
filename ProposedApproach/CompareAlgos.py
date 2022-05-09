@@ -37,75 +37,68 @@ def calculate_distances(X):
             distances[j, i] = d
     return distances
 
-def path_clustering(X, eps):
-    distances = calculate_distances(X)
-    dbscan = DBSCAN(eps=eps, metric="precomputed", n_jobs=-1, min_samples=2)
-    labels = dbscan.fit_predict(distances)
-    y_pred = np.array([1 if l == -1 else 0 for l in labels])
+parser = argparse.ArgumentParser(
+    description="Compare performance of clustering algorithms.")
+parser.add_argument("--dataset",
+                    help="Specify the dataset to use",
+                    default="geolife")
+parser.add_argument("--G", help="Specify the grid size", default="50")
+parser.add_argument("--eps", help="Specify the eps", default="2.5")
+args = parser.parse_args()
 
-    return y_pred
+dataset = args.dataset
+grid_scale = int(args.G)
+Eps = float(args.eps)
 
-def feature_training(X, y):
-    X_features = [[
-        x[0][0], x[0][1], x[-1][0], x[-1][1],
-        slant(x),
-        distance_of_trajectory(x)
-    ] for x in X]
+data_file = "trajectories_labeled_" + dataset + ".pkl"
+data = pickle.load(open(data_file, "rb"))
 
-    X_features = MinMaxScaler().fit_transform(X_features)
-    lg = SVC(C=4000)
-    lg.fit(X_features, y)
-    y_pred = lg.predict(X_features)
+X = [[p[:2] for p in d[0]] for d in data]
+y = np.array([d[1] for d in data])
 
-    return y_pred
+print("Average length of raw sequences:", average_length_of_sequences(X))
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Compare performance of clustering algorithms.")
-    parser.add_argument("--dataset",
-                        help="Specify the dataset to use",
-                        default="geolife")
-    parser.add_argument("--G", help="Specify the grid size", default="50")
-    parser.add_argument("--eps", help="Specify the eps", default="2.5")
-    args = parser.parse_args()
+scaler = Scaler()
+points = []
+for x in X:
+    points.extend(x)
+scaler.fit(points)
+X = [scaler.transform_trajectory(x) for x in X]
 
-    dataset = args.dataset
-    grid_scale = int(args.G)
-    Eps = float(args.eps)
+X_grid = []
+for x in tqdm(X):
+    X_grid.append(scaler.trajectory_to_grid(x, grid_scale))
+print("Average length of size " + str(grid_scale) + " grid cell sequences:",
+    average_length_of_sequences(X_grid))
 
-    data_file = "trajectories_labeled_" + dataset + ".pkl"
-    data = pickle.load(open(data_file, "rb"))
+t = perf_counter()
 
-    X = [[p[:2] for p in d[0]] for d in data]
-    y = np.array([d[1] for d in data])
+distances = calculate_distances(X_grid)
+dbscan = DBSCAN(eps=Eps, metric="precomputed", n_jobs=-1, min_samples=2)
+labels = dbscan.fit_predict(distances)
+y_pred1 = np.array([1 if l == -1 else 0 for l in labels])
+print("Finished path clustering")
 
-    print("Average length of raw sequences:", average_length_of_sequences(X))
+X_features = [[
+    x[0][0], x[0][1], x[-1][0], x[-1][1],
+    slant(x),
+    distance_of_trajectory(x)
+] for x in X]
 
-    scaler = Scaler()
-    points = []
-    for x in X:
-        points.extend(x)
-    scaler.fit(points)
-    X = [scaler.transform_trajectory(x) for x in X]
-    
-    X_grid = []
-    for x in tqdm(X):
-        X_grid.append(scaler.trajectory_to_grid(x, grid_scale))
-    print("Average length of size " + str(grid_scale) + " grid cell sequences:",
-        average_length_of_sequences(X_grid))
-    
-    t = perf_counter()
-    y_pred1 = path_clustering(X, Eps)
-    print("Finished path clustering")
-    y_pred2 = feature_training(X, y)
-    print("Finished feature training")
+X_features = MinMaxScaler().fit_transform(X_features)
+lg = SVC(C=4000)
+lg.fit(X_features, y)
+y_pred2 = lg.predict(X_features)
 
-    y_pred_concat = np.concatenate((y_pred1.reshape((-1, 1)), y_pred2.reshape((-1, 1))), axis=1)
-    logreg = LogisticRegression()
-    logreg.fit(y_pred_concat, y)
-    y_pred = logreg.predict(y_pred_concat)
+print("Finished feature training")
 
-    print("Running time:", round(perf_counter()-t, 1), "seconds")
-    print("Accuracy score:", round(accuracy_score(y, y_pred), 4))
-    print("F1 score:", round(f1_score(y, y_pred, average="macro"), 4))
-    print(confusion_matrix(y, y_pred))
+y_pred_concat = np.concatenate((y_pred1.reshape((-1, 1)), y_pred2.reshape((-1, 1))), axis=1)
+logreg = LogisticRegression()
+logreg.fit(y_pred_concat, y)
+y_pred = logreg.predict(y_pred_concat)
+print(logreg.coef_)
+
+print("Running time:", round(perf_counter()-t, 1), "seconds")
+print("Accuracy score:", round(accuracy_score(y, y_pred), 4))
+print("F1 score:", round(f1_score(y, y_pred, average="macro"), 4))
+print(confusion_matrix(y, y_pred))
