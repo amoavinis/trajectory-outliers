@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 class Simplifier:
     def __init__(self, threshold):
-        self.threshold = threshold
+        self.threshold = 180 - threshold
         self.angles = []
 
     def to_polar(self, O, x):
