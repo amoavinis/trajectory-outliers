@@ -42,13 +42,19 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--dataset",
                     help="Specify the dataset to use",
                     default="geolife")
-parser.add_argument("--G", help="Specify the grid size", default="50")
-parser.add_argument("--eps", help="Specify the eps", default="2.5")
+parser.add_argument("--G", help="Specify the grid size", default="40")
+parser.add_argument("--eps", help="Specify the eps", default="1.5")
+parser.add_argument("--C", help="The C parameter.", default="8000")
+parser.add_argument("--gamma", help="The gamma parameter.", default="scale")
+parser.add_argument("--kernel", help="The SVM kernel.", default="rbf")
 args = parser.parse_args()
 
 dataset = args.dataset
 grid_scale = int(args.G)
-Eps = float(args.eps)
+eps = float(args.eps)
+C = int(args.C)
+gamma = args.gamma
+kernel = args.kernel
 
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
@@ -74,7 +80,7 @@ print("Average length of size " + str(grid_scale) + " grid cell sequences:",
 t = perf_counter()
 
 distances = calculate_distances(X_grid)
-dbscan = DBSCAN(eps=Eps, metric="precomputed", n_jobs=-1, min_samples=2)
+dbscan = DBSCAN(eps=eps, metric="precomputed", n_jobs=-1, min_samples=2)
 labels = dbscan.fit_predict(distances)
 y_pred1 = np.array([1 if l == -1 else 0 for l in labels])
 print("Finished path clustering")
@@ -86,7 +92,7 @@ X_features = [[
 ] for x in X]
 
 X_features = MinMaxScaler().fit_transform(X_features)
-lg = SVC(C=4000)
+lg = SVC(C=C, gamma=gamma, kernel=kernel)
 lg.fit(X_features, y)
 y_pred2 = lg.predict(X_features)
 
@@ -96,7 +102,7 @@ y_pred_concat = np.concatenate((y_pred1.reshape((-1, 1)), y_pred2.reshape((-1, 1
 logreg = LogisticRegression()
 logreg.fit(y_pred_concat, y)
 y_pred = logreg.predict(y_pred_concat)
-print(logreg.coef_)
+print(logreg.coef_) 
 
 print("Running time:", round(perf_counter()-t, 1), "seconds")
 print("Accuracy score:", round(accuracy_score(y, y_pred), 4))
