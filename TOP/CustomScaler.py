@@ -1,5 +1,4 @@
 class Scaler:
-
     def __init__(self):
         self.min = [100000, 100000]
         self.max = [-100000, -100000]
