@@ -3,7 +3,7 @@ import geopy.distance
 import networkx as nx
 import osmnx as ox
 import tqdm
-#ox.config(use_cache=True, log_console=False)
+ox.config(use_cache=True, log_console=False)
 import warnings
 warnings.filterwarnings("ignore")
 import os
@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description="Train and predict using the DODB m
 parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
 parser.add_argument("--W", help="The threshold ratio of total distance over minimum path distance", default="15")
 parser.add_argument("--D0", help="D0", default="1000000")
-parser.add_argument("--D1", help="D1", default="1000000")
+parser.add_argument("--D1", help="D1", default="40000")
 args = parser.parse_args()
 
 dataset = args.dataset
@@ -84,7 +84,7 @@ else:
         
         dists.append((trajectory, (snap_dist, dist, ratio), y[i]))
         i += 1
-    pickle.dump(dists, open("monav_dists_"+dataset+".pkl", "wb"))
+    pickle.dump(dists, open("dodb_dists_"+dataset+".pkl", "wb"))
 
 def evaluate(x):
     if x[1][2] > W or x[1][0] > D0 or x[1][1] > D1:
