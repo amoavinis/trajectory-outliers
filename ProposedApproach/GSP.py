@@ -28,12 +28,16 @@ class GSPModule:
                 x_int.append([int(l[0]), int(l[1])])
             intified.append(np.array(x_int))
 
+        return intified
+
     def deviation_from_frequent(self, X, t):
         stringified = [self.stringify_grid_trajectory(x) for x in X]
 
         frequent = []
         if os.path.exists("freq_subs.pkl"):
-            frequent = pickle.load(open("freq_subs.pkl", "rb"))
+            dicts = pickle.load(open("freq_subs.pkl", "rb"))
+            for d in dicts:
+                frequent.extend(d.keys())
         else:
             frequent = self.find_frequent_subsequences(stringified, t)
             pickle.dump(frequent, open("freq_subs.pkl", "wb"))
