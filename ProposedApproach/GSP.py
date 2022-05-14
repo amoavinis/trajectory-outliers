@@ -36,6 +36,7 @@ class GSPModule:
             frequent = pickle.load(open("freq_subs.pkl", "rb"))
         else:
             frequent = self.find_frequent_subsequences(stringified, t)
+            pickle.dump(frequent, open("freq_subs.pkl", "wb"))
         intified_freq = self.intify_grid_trajectories(frequent)
         distances = np.zeros((len(X), len(frequent)))
         for i in range(distances.shape[0]):
