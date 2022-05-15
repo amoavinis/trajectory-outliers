@@ -1,18 +1,21 @@
 import pickle
 import argparse
-import numpy as np
-from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
-from CustomScaler import Scaler
-from Utils import average_length_of_sequences, distance_of_trajectory, slant
-from sklearn.cluster import DBSCAN
 from time import perf_counter
 from numba import njit
 import warnings
 warnings.filterwarnings("ignore")
+
+import numpy as np
+from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.cluster import DBSCAN
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+
+from CustomScaler import Scaler
+from Utils import average_length_of_sequences, distance_of_trajectory, slant
+from GSP import GSPModule
 
 @njit
 def hausdorff_dist(A, B):
@@ -85,11 +88,17 @@ labels = dbscan.fit_predict(distances)
 y_pred1 = np.array([1 if l == -1 else 0 for l in labels])
 print("Finished path clustering")
 
-X_features = [[
-    x[0][0], x[0][1], x[-1][0], x[-1][1],
-    slant(x),
-    distance_of_trajectory(x)
-] for x in X]
+gsp = GSPModule()
+gsp_dists = gsp.deviation_from_frequent(X, 0.05)
+
+X_features = []
+for i, x in enumerate(X):
+    X_features.append([
+        x[0][0], x[0][1], x[-1][0], x[-1][1],
+        slant(x),
+        distance_of_trajectory(x),
+        gsp_dists[i]
+    ])
 
 X_features = MinMaxScaler().fit_transform(X_features)
 lg = SVC(C=C, gamma=gamma, kernel=kernel)
