@@ -62,17 +62,17 @@ kernel = args.kernel
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
 
-X = [[p[:2] for p in d[0]] for d in data]
+X_init = [[p[:2] for p in d[0]] for d in data]
 y = np.array([d[1] for d in data])
 
-print("Average length of raw sequences:", average_length_of_sequences(X))
+print("Average length of raw sequences:", average_length_of_sequences(X_init))
 
 scaler = Scaler()
 points = []
-for x in X:
+for x in X_init:
     points.extend(x)
 scaler.fit(points)
-X = [scaler.transform_trajectory(x) for x in X]
+X = [scaler.transform_trajectory(x) for x in X_init]
 
 X_grid = []
 for x in tqdm(X):
@@ -117,3 +117,9 @@ print("Running time:", round(perf_counter()-t, 1), "seconds")
 print("Accuracy score:", round(accuracy_score(y, y_pred), 4))
 print("F1 score:", round(f1_score(y, y_pred, average="macro"), 4))
 print(confusion_matrix(y, y_pred))
+
+output = []
+for i, x in enumerate(X_init):
+    output.append([X_features[i], X_init[i], y_pred[i]])
+pickle.dump(output, open("trajectory_features_labeled.pkl", "wb"))
+
