@@ -131,7 +131,7 @@ class Normalizer:
 
 data_prefixes = {
     "geolife": "Datasets/Geolife Trajectories 1.3/Data/",
-    "tdrive": "Datasets/T-Drive/taxi_log_2008_by_id/"
+    "thessaloniki": "TODO"
 }
 
 class Labeling:
