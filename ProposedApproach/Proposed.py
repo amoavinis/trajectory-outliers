@@ -14,7 +14,7 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 
 from CustomScaler import Scaler
-from Utils import average_length_of_sequences, distance_of_trajectory, slant
+from Utils import average_length_of_sequences, distance_of_trajectory
 from GSP import GSPModule
 
 @njit
@@ -50,6 +50,7 @@ parser.add_argument("--eps", help="Specify the eps", default="1.5")
 parser.add_argument("--C", help="The C parameter.", default="8000")
 parser.add_argument("--gamma", help="The gamma parameter.", default="scale")
 parser.add_argument("--kernel", help="The SVM kernel.", default="rbf")
+parser.add_argument("--method", help="clustering, svm or both", default="svm")
 args = parser.parse_args()
 
 dataset = args.dataset
@@ -58,6 +59,7 @@ eps = float(args.eps)
 C = int(args.C)
 gamma = args.gamma
 kernel = args.kernel
+method = args.method
 
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
@@ -82,36 +84,42 @@ print("Average length of size " + str(grid_scale) + " grid cell sequences:",
 
 t = perf_counter()
 
-distances = calculate_distances(X_grid)
-dbscan = DBSCAN(eps=eps, metric="precomputed", n_jobs=-1, min_samples=2)
-labels = dbscan.fit_predict(distances)
-y_pred1 = np.array([1 if l == -1 else 0 for l in labels])
-print("Finished path clustering")
+if method != "svm":
+    distances = calculate_distances(X_grid)
+    dbscan = DBSCAN(eps=eps, metric="precomputed", n_jobs=-1, min_samples=2)
+    labels = dbscan.fit_predict(distances)
+    y_pred1 = np.array([1 if l == -1 else 0 for l in labels])
+    print("Finished path clustering")
 
-gsp = GSPModule()
-gsp_dists = gsp.deviation_from_frequent(X, 0.05)
+if method != "cluster":
+    gsp = GSPModule()
+    gsp_dists = gsp.deviation_from_frequent(X, 0.05)
 
-X_features = []
-for i, x in enumerate(X):
-    X_features.append([
-        x[0][0], x[0][1], x[-1][0], x[-1][1],
-        slant(x),
-        distance_of_trajectory(x),
-        gsp_dists[i]
-    ])
+    X_features = []
+    for i, x in enumerate(X):
+        X_features.append([
+            x[0][0], x[0][1], x[-1][0], x[-1][1],
+            distance_of_trajectory(x),
+            gsp_dists[i]
+        ])
 
-X_features = MinMaxScaler().fit_transform(X_features)
-lg = SVC(C=C, gamma=gamma, kernel=kernel)
-lg.fit(X_features, y)
-y_pred2 = lg.predict(X_features)
+    X_features = MinMaxScaler().fit_transform(X_features)
+    lg = SVC(C=C, gamma=gamma, kernel=kernel)
+    lg.fit(X_features, y)
+    y_pred2 = lg.predict(X_features)
 
-print("Finished feature training")
+    print("Finished feature training")
 
-y_pred_concat = np.concatenate((y_pred1.reshape((-1, 1)), y_pred2.reshape((-1, 1))), axis=1)
-logreg = LogisticRegression()
-logreg.fit(y_pred_concat, y)
-y_pred = logreg.predict(y_pred_concat)
-print(logreg.coef_) 
+if method == "both":
+    y_pred_concat = np.concatenate((y_pred1.reshape((-1, 1)), y_pred2.reshape((-1, 1))), axis=1)
+    logreg = LogisticRegression()
+    logreg.fit(y_pred_concat, y)
+    y_pred = logreg.predict(y_pred_concat)
+    print(logreg.coef_) 
+elif method == "cluster":
+    y_pred = y_pred1
+else:
+    y_pred = y_pred2
 
 print("Running time:", round(perf_counter()-t, 1), "seconds")
 print("Accuracy score:", round(accuracy_score(y, y_pred), 4))

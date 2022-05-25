@@ -10,12 +10,3 @@ def distance_of_trajectory(traj):
     for i in range(len(traj) - 1):
         dist += np.linalg.norm(traj[i]-traj[i+1])
     return dist
-
-def slant(traj):
-    sd_len = np.linalg.norm(traj[-1]-traj[0])
-    dx = traj[-1][0] - traj[0][0]
-    if sd_len > 0:
-        sine = dx / sd_len
-        return sine
-    else:
-        return 0
