@@ -38,17 +38,7 @@ class Normalizer:
 
             return result
         else:
-            lines = file.readlines()
-
-            result = []
-
-            for line in lines:
-                split_line = line.split(",")[2:]
-                latitude = float(split_line[1])
-                longitude = float(split_line[0])
-                result.append([longitude, latitude])
-
-            return result
+            print("Not implemented")
 
     def create_trajectories(self):
         for i in tqdm(os.listdir(self.data_path)):
@@ -83,18 +73,14 @@ class Normalizer:
     def remove_duplicates(self, x):
         y = [x[0]]
         for i in range(1, len(x)):
-            if self.dataset == "geolife" and y[-1][0] != x[i][0] or self.dataset != "geolife" and y[-1] != x[i]:
+            if y[-1][0] != x[i][0]:
                 y.append(x[i])
         return y
 
     def transform_trajectory_to_grid(self, traj, grid_scale):
         trajectory_transformed = []
         for p in traj:
-            to_append = None
-            if self.dataset == "geolife":
-                to_append = (self.coords_to_grid(self.scaler.transform([p[:2]])[0], grid_scale), p[2])
-            else:
-                to_append = self.coords_to_grid(self.scaler.transform([p[:2]])[0], grid_scale)
+            to_append = (self.coords_to_grid(self.scaler.transform([p[:2]])[0], grid_scale), p[2])
             trajectory_transformed.append(to_append)
         return self.remove_duplicates(trajectory_transformed)
 
@@ -162,8 +148,8 @@ class Labeling:
     def group_by_sd_pairs(self, trajectories, threshold):
         sd_pairs = dict()
         for traj in trajectories:
-            s = traj[1][0][0] if self.dataset == "geolife" else traj[1][0]
-            d = traj[1][-1][0] if self.dataset == "geolife" else traj[1][-1]
+            s = traj[1][0][0]
+            d = traj[1][-1][0]
             sd_pair = s+"->"+d
             if sd_pair in sd_pairs:
                 sd_pairs[sd_pair].append(traj)
@@ -185,12 +171,8 @@ class Labeling:
         return set(lst1).union(lst2)
 
     def custom_distance(self, x1, x2):
-        if self.dataset == "geolife":
-            X1 = set([p[0] for p in self.paths[int(x1[0])]])
-            X2 = set([p[0] for p in self.paths[int(x2[0])]])
-        else:
-            X1 = set(self.paths[int(x1[0])])
-            X2 = set(self.paths[int(x2[0])])
+        X1 = set([p[0] for p in self.paths[int(x1[0])]])
+        X2 = set([p[0] for p in self.paths[int(x2[0])]])
         jaccard_sq = 1 - len(X1.intersection(X2))/len(X1.union(X2))
         return jaccard_sq
 
