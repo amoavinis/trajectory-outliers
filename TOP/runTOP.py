@@ -12,12 +12,14 @@ parser.add_argument("--dataset", help="Specify the dataset to use", default="geo
 parser.add_argument("--G", help="The number of grid cells per dimension", default="5")
 parser.add_argument("--minSup", help="The minimum support for a CF pattern", default="5")
 parser.add_argument("--seqGap", help="The seqGap parameter", default="2")
+parser.add_argument("--seed", default="9999")
 args = parser.parse_args()
 
 dataset = args.dataset
 grid_scale = int(args.G)
 minSup = int(args.minSup)
 seqGap = int(args.seqGap)
+seed = int(args.seed)
 
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
@@ -31,7 +33,7 @@ for x in X:
 scaler.fit(points)
 X = [scaler.trajectory_to_grid(scaler.transform_trajectory(x), grid_scale) for x in X]
 
-x_train, x_test, y_train, y_test = train_test_split(X, y, train_size=0.75, random_state=10)
+x_train, x_test, y_train, y_test = train_test_split(X, y, train_size=0.75, random_state=seed)
 
 preprocessor = Preprocessor(x_train, minSup, seqGap)
 

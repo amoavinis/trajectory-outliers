@@ -8,6 +8,7 @@ import warnings
 warnings.filterwarnings("ignore")
 import os
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
+from sklearn.model_selection import train_test_split
 import argparse
 
 parser = argparse.ArgumentParser(description="Train and predict using the DODB model.")
@@ -15,18 +16,22 @@ parser.add_argument("--dataset", help="Specify the dataset to use", default="geo
 parser.add_argument("--W", help="The threshold ratio of total distance over minimum path distance", default="15")
 parser.add_argument("--D0", help="D0", default="1000000")
 parser.add_argument("--D1", help="D1", default="40000")
+parser.add_argument("--seed", default="999")
 args = parser.parse_args()
 
 dataset = args.dataset
 W = int(args.W)
 D0 = int(args.D0)
 D1 = int(args.D1)
+seed = int(args.seed)
+
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 all_data = pickle.load(open(data_file, "rb"))
 
 X = [t[0] for t in all_data]
 y = [t[1] for t in all_data]
 X = [[p[:2][::-1] for p in t] for t in X]
+indices_train, indices_test = train_test_split(range(len(X)), train_size=0.75, random_state=seed)
 
 def trajectory_distance(traj):
     dist = 0.0
@@ -92,8 +97,13 @@ def evaluate(x):
     else:
         return 0
 
-y_pred = [evaluate(d) for d in dists]
+test_dists = []
+y_test = []
+for index in indices_test:
+    test_dists.append(dists[index])
+    y_test.append(y[index])
+y_pred = [evaluate(d) for d in test_dists]
 
-print("Accuracy score:", accuracy_score(y, y_pred))
-print("F1 score:", f1_score(y, y_pred, average="macro"))
-print(confusion_matrix(y, y_pred))
+print("Accuracy score:", accuracy_score(y_test, y_pred))
+print("F1 score:", f1_score(y_test, y_pred, average="macro"))
+print(confusion_matrix(y_test, y_pred))
