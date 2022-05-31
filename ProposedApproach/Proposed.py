@@ -12,6 +12,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.cluster import DBSCAN
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 
 from CustomScaler import Scaler
 from Utils import average_length_of_sequences, distance_of_trajectory
@@ -51,6 +52,9 @@ parser.add_argument("--C", help="The C parameter.", default="8000")
 parser.add_argument("--gamma", help="The gamma parameter.", default="scale")
 parser.add_argument("--kernel", help="The SVM kernel.", default="rbf")
 parser.add_argument("--method", help="clustering, svm or both", default="svm")
+parser.add_argument("--do_gsp", help="0 or 1", default="0")
+parser.add_argument("--gsp_support", default="0.05")
+parser.add_argument("--seed", default="999")
 args = parser.parse_args()
 
 dataset = args.dataset
@@ -60,6 +64,9 @@ C = int(args.C)
 gamma = args.gamma
 kernel = args.kernel
 method = args.method
+do_gsp = bool(int(args.do_gsp))
+gsp_support = float(args.gsp_support)
+seed = int(args.seed)
 
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
@@ -67,67 +74,106 @@ data = pickle.load(open(data_file, "rb"))
 X_init = [[p[:2] for p in d[0]] for d in data]
 y = np.array([d[1] for d in data])
 
+x_init_train, x_init_test, y_train, y_test = train_test_split(X_init, y, train_size=0.75, random_state=seed)
+
 print("Average length of raw sequences:", average_length_of_sequences(X_init))
+
+t = perf_counter()
 
 scaler = Scaler()
 points = []
 for x in X_init:
     points.extend(x)
 scaler.fit(points)
-X = [scaler.transform_trajectory(x) for x in X_init]
 
-X_grid = []
-for x in tqdm(X):
-    X_grid.append(scaler.trajectory_to_grid(x, grid_scale))
+x_train = [scaler.transform_trajectory(x) for x in x_init_train]
+x_test = [scaler.transform_trajectory(x) for x in x_init_test]
+
+X_grid_train = []
+X_grid_test = []
+for x in x_train:
+    X_grid_train.append(scaler.trajectory_to_grid(x, grid_scale))
 print("Average length of size " + str(grid_scale) + " grid cell sequences:",
-    average_length_of_sequences(X_grid))
+    average_length_of_sequences(X_grid_train))
 
-t = perf_counter()
+gsp = GSPModule()
+if method != "cluster" and do_gsp:
+    gsp.find_frequent_subsequences(X_grid_train+X_grid_test, gsp_support, True)
+
+for x in x_test:
+    X_grid_test.append(scaler.trajectory_to_grid(x, grid_scale))
 
 if method != "svm":
-    distances = calculate_distances(X_grid)
+    distances = calculate_distances(X_grid_train+X_grid_test)
+    distances_train = distances[:len(X_grid_train), :len(X_grid_train)]
+    
     dbscan = DBSCAN(eps=eps, metric="precomputed", n_jobs=-1, min_samples=2)
-    labels = dbscan.fit_predict(distances)
-    y_pred1 = np.array([1 if l == -1 else 0 for l in labels])
+    labels_train = dbscan.fit_predict(distances_train)
+
+    distances_test_pred = distances[len(X_grid_train):, :len(X_grid_train)]
+    labels_test = [labels_train[np.argmin(distances_test_pred[i])] for i in range(len(X_grid_test))]
+
+    y_pred_train1 = np.array([1 if l == -1 else 0 for l in labels_train])
+    y_pred_test1 = np.array([1 if l == -1 else 0 for l in labels_test])
     print("Finished path clustering")
 
-if method != "cluster":
-    gsp = GSPModule()
-    gsp_dists = gsp.deviation_from_frequent(X, 0.05)
-
-    X_features = []
+def calc_features(X, gsp_dists=[], gsp=False):
+    feature_list = []
     for i, x in enumerate(X):
-        X_features.append([
-            x[0][0], x[0][1], x[-1][0], x[-1][1],
-            distance_of_trajectory(x),
-            gsp_dists[i]
-        ])
+        features = [x[0][0], x[0][1], x[-1][0], x[-1][1],
+            distance_of_trajectory(x)]
+        if gsp:
+            features.append(gsp_dists[i])
+        feature_list.append(features)
+    return feature_list
 
-    X_features = MinMaxScaler().fit_transform(X_features)
-    lg = SVC(C=C, gamma=gamma, kernel=kernel)
-    lg.fit(X_features, y)
-    y_pred2 = lg.predict(X_features)
+
+if method != "cluster":
+    gsp_dists_train = []
+    gsp_dists_test = []
+    if do_gsp:
+        gsp_dists_train = gsp.deviation_from_frequent(X_grid_train)
+        gsp_dists_test = gsp.deviation_from_frequent(X_grid_test)
+    
+    X_features_train = calc_features(x_train, gsp_dists_train, do_gsp)
+    X_features_test = calc_features(x_test, gsp_dists_test, do_gsp)
+    
+    minmax = MinMaxScaler()
+    X_features_train = minmax.fit_transform(X_features_train)
+    X_features_test = minmax.transform(X_features_test)
+
+    svm = SVC(C=C, gamma=gamma, kernel=kernel)
+    svm.fit(X_features_train, y_train)
+    y_pred_train2 = svm.predict(X_features_train)
+    y_pred_test2 = svm.predict(X_features_test)
 
     print("Finished feature training")
 
 if method == "both":
-    y_pred_concat = np.concatenate((y_pred1.reshape((-1, 1)), y_pred2.reshape((-1, 1))), axis=1)
+    y_pred_train_concat = np.concatenate((y_pred_train1.reshape((-1, 1)), y_pred_train2.reshape((-1, 1))), axis=1)
+    y_pred_test_concat = np.concatenate((y_pred_test1.reshape((-1, 1)), y_pred_test2.reshape((-1, 1))), axis=1)
     logreg = LogisticRegression()
-    logreg.fit(y_pred_concat, y)
-    y_pred = logreg.predict(y_pred_concat)
+    logreg.fit(y_pred_train_concat, y_train)
+    y_pred_train = logreg.predict(y_pred_train_concat)
+    y_pred_test = logreg.predict(y_pred_test_concat)
     print(logreg.coef_) 
 elif method == "cluster":
-    y_pred = y_pred1
+    y_pred_train = y_pred_train1
+    y_pred_test = y_pred_test1
 else:
-    y_pred = y_pred2
+    y_pred_train = y_pred_train2
+    y_pred_test = y_pred_test2
 
 print("Running time:", round(perf_counter()-t, 1), "seconds")
-print("Accuracy score:", round(accuracy_score(y, y_pred), 4))
-print("F1 score:", round(f1_score(y, y_pred, average="macro"), 4))
-print(confusion_matrix(y, y_pred))
+print("Train accuracy score:", round(accuracy_score(y_train, y_pred_train), 4))
+print("Train F1 score:", round(f1_score(y_train, y_pred_train, average="macro"), 4))
+print("Test accuracy score:", round(accuracy_score(y_test, y_pred_test), 4))
+print("Test F1 score:", round(f1_score(y_test, y_pred_test, average="macro"), 4))
+print(confusion_matrix(y_test, y_pred_test))
 
-output = []
-for i, x in enumerate(X_init):
-    output.append([X_features[i], X_init[i], y_pred[i]])
-pickle.dump(output, open("trajectory_features_labeled.pkl", "wb"))
+if method != "cluster":
+    output = []
+    for i, x in enumerate(x_init_test):
+        output.append([X_features_test[i], x_init_test[i], y_pred_test[i]])
+    pickle.dump(output, open("trajectory_features_labeled.pkl", "wb"))
 
