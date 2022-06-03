@@ -7,7 +7,7 @@ from sklearn.cluster import KMeans, DBSCAN
 from sklearn.metrics import silhouette_score
 seed(2)
 
-data = pickle.load(open("trajectory_features_labeled.pkl", "rb"))
+data = pickle.load(open("trajectory_features_labeled_geolife.pkl", "rb"))
 
 X = [[d[0][0], d[0][1], d[0][2], d[0][3], d[0][5]] for d in data]
 paths = [d[1] for d in data]

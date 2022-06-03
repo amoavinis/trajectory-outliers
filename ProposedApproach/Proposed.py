@@ -175,5 +175,5 @@ if method != "cluster":
     output = []
     for i, x in enumerate(x_init_test):
         output.append([X_features_test[i], x_init_test[i], y_pred_test[i]])
-    pickle.dump(output, open("trajectory_features_labeled.pkl", "wb"))
+    pickle.dump(output, open(f"trajectory_features_labeled_{dataset}.pkl", "wb"))
 
