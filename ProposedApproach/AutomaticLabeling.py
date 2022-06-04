@@ -173,8 +173,8 @@ class Labeling:
     def group_by_sd_pairs(self, trajectories, threshold):
         sd_pairs = dict()
         for traj in trajectories:
-            s = traj[1][0][0]
-            d = traj[1][-1][0]
+            s = traj[1][0]
+            d = traj[1][-1]
             sd_pair = s+"->"+d
             if sd_pair in sd_pairs:
                 sd_pairs[sd_pair].append(traj)
@@ -252,7 +252,7 @@ parser = argparse.ArgumentParser(description="Automatic annotation of the select
 parser.add_argument("--dataset", help="Specify the dataset to use", default="geolife")
 parser.add_argument("--G", help="The number of grid cells per dimension", default="5")
 parser.add_argument("--thr", help="Percentage threshold for acceptable cluster size.", default="0.03")
-parser.add_argument("--minThr", help="Count threshold for acceptable sd-pair size.", default="2")
+parser.add_argument("--minThr", help="Count threshold for acceptable sd-pair size.", default="15")
 parser.add_argument("--dist", help="The distance threshold for forming clusters with the complete linkage algorithm.", default="0.4")
 args = parser.parse_args()
 
