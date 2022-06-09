@@ -71,7 +71,7 @@ class Normalizer:
             file.close()
 
             self.all_trajectories = [self.process_skg_json(line) for line in lines]
-            print(len(self.all_trajectories))
+
             points = []
             for t in self.all_trajectories:
                 for p in t:
