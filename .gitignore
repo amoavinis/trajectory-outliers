@@ -1,2 +1,4 @@
 /Datasets
 *.pkl
+*/__pycache__
+*minmax.txt
