@@ -2,8 +2,10 @@ import pickle
 import geopy.distance
 import networkx as nx
 import osmnx as ox
+from osmnx import settings
 import tqdm
-ox.config(use_cache=True, log_console=False)
+settings.log_console = False
+settings.use_cache = True
 import warnings
 warnings.filterwarnings("ignore")
 import os
@@ -42,8 +44,8 @@ def trajectory_distance(traj):
 def get_nearest_nodes(G, start, finish):
     start = [round(start[0], 6), round(start[1], 6)]
     finish = [round(finish[0], 6), round(finish[1], 6)]
-    orig_node = ox.get_nearest_node(G, start)
-    target_node = ox.get_nearest_node(G, finish)
+    orig_node = ox.nearest_nodes(G, start[0], start[1])
+    target_node = ox.nearest_nodes(G, finish[0], finish[1])
 
     return orig_node, target_node
 
@@ -68,7 +70,8 @@ if os.path.exists("dodb_dists_"+dataset+".pkl"):
     dists = pickle.load(open("dodb_dists_"+dataset+".pkl", "rb"))
 else:
     # get a graph
-    G = ox.graph_from_place("Beijing, China", network_type='drive', simplify=True)
+    location = "South Cyprus" if dataset == "cyprus" else "Beijing, China"
+    G = ox.graph_from_place(location, network_type='drive', simplify=True)
 
     # impute missing edge speed and add travel times
     G = ox.add_edge_speeds(G)
