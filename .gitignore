@@ -1,7 +1,10 @@
-*.test
-Datasets
+/Datasets
 *.pkl
-*.json
-*.pyc
 */__pycache__
-*.txt
+*minmax.txt
+*.gpx
+cache
+my_outliers.txt
+cyprus params.txt
+*.json
+*.csv
