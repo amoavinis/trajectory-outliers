@@ -52,6 +52,12 @@ class Normalizer:
             traj.append([longitude, latitude])
         return traj
 
+    def process_cyprus_trajectory(self, points):
+        traj = []
+        for p in points:
+            traj.append([p[1], p[0]])
+        return traj
+
     def create_trajectories(self):
         if self.dataset == "geolife":
             for i in tqdm(os.listdir(self.data_path)):
@@ -78,6 +84,10 @@ class Normalizer:
                     points.append(p)
             plt.scatter([p[0] for p in points], [p[1] for p in points])
             plt.show()
+        elif self.dataset == "cyprus":
+            file = open(self.data_path, 'r')
+            data_dict = json.load(file)
+            self.all_trajectories = [self.process_cyprus_trajectory(data_dict[id]) for id in data_dict]
         else:
             print("Not implemented")
 
@@ -156,7 +166,8 @@ class Normalizer:
 
 data_prefixes = {
     "geolife": "Datasets/Geolife Trajectories 1.3/Data/",
-    "thessaloniki": "Datasets/ThessalonikiDataset/"
+    "thessaloniki": "Datasets/ThessalonikiDataset/",
+    "cyprus": "Istognosis Data/istognosis_data.json"
 }
 
 class Labeling:

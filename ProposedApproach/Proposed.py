@@ -1,22 +1,20 @@
+from GSP import GSPModule
+from Utils import average_length_of_sequences, distance_of_trajectory
+from CustomScaler import Scaler
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
+import numpy as np
 import pickle
 import argparse
-from tqdm import tqdm
 from time import perf_counter
 from numba import njit
 import warnings
 warnings.filterwarnings("ignore")
 
-import numpy as np
-from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.cluster import DBSCAN
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
-
-from CustomScaler import Scaler
-from Utils import average_length_of_sequences, distance_of_trajectory
-from GSP import GSPModule
 
 @njit
 def hausdorff_dist(A, B):
@@ -31,6 +29,7 @@ def hausdorff_dist(A, B):
             dist = minimum
     return dist
 
+
 @njit
 def calculate_distances(X):
     distances = np.zeros((len(X), len(X)))
@@ -41,6 +40,7 @@ def calculate_distances(X):
             distances[j, i] = d
     return distances
 
+
 parser = argparse.ArgumentParser(
     description="Compare performance of clustering algorithms.")
 parser.add_argument("--dataset",
@@ -48,6 +48,8 @@ parser.add_argument("--dataset",
                     default="geolife")
 parser.add_argument("--G", help="Specify the grid size", default="40")
 parser.add_argument("--eps", help="Specify the eps", default="1.5")
+parser.add_argument(
+    "--minPts", help="The DBSCAN minPts parameter.", default="2")
 parser.add_argument("--C", help="The C parameter.", default="8000")
 parser.add_argument("--gamma", help="The gamma parameter.", default="scale")
 parser.add_argument("--kernel", help="The SVM kernel.", default="rbf")
@@ -60,6 +62,7 @@ args = parser.parse_args()
 dataset = args.dataset
 grid_scale = int(args.G)
 eps = float(args.eps)
+minPts = int(args.minPts)
 C = int(args.C)
 gamma = args.gamma
 kernel = args.kernel
@@ -71,10 +74,18 @@ seed = int(args.seed)
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
 
+manual_outliers = []
+if dataset == "cyprus":
+    try:
+        manual_outliers = pickle.load(open("manual_outliers.pkl", "rb"))
+    except:
+        pass
+
 X_init = [[p[:2] for p in d[0]] for d in data]
 y = np.array([d[1] for d in data])
 
-x_init_train, x_init_test, y_train, y_test = train_test_split(X_init, y, train_size=0.75, random_state=seed)
+x_init_train, x_init_test, y_train, y_test = train_test_split(
+    X_init, y, train_size=0.75, random_state=seed)
 
 print("Average length of raw sequences:", average_length_of_sequences(X_init))
 
@@ -88,81 +99,123 @@ scaler.fit(points)
 
 x_train = [scaler.transform_trajectory(x) for x in x_init_train]
 x_test = [scaler.transform_trajectory(x) for x in x_init_test]
+if dataset == "cyprus":
+    manual_outliers = [scaler.transform_trajectory(x) for x in manual_outliers]
 
-X_grid_train = []
-X_grid_test = []
-for x in x_train:
-    X_grid_train.append(scaler.trajectory_to_grid(x, grid_scale))
-print("Average length of size " + str(grid_scale) + " grid cell sequences:",
-    average_length_of_sequences(X_grid_train))
 
-gsp = GSPModule()
-if method != "cluster" and do_gsp:
-    gsp.find_frequent_subsequences(X_grid_train+X_grid_test, gsp_support, True)
-
-for x in x_test:
-    X_grid_test.append(scaler.trajectory_to_grid(x, grid_scale))
-
-if method != "svm":
-    distances = calculate_distances(X_grid_train+X_grid_test)
-    distances_train = distances[:len(X_grid_train), :len(X_grid_train)]
-    
-    dbscan = DBSCAN(eps=eps, metric="precomputed", n_jobs=-1, min_samples=2)
-    labels_train = dbscan.fit_predict(distances_train)
-
-    distances_test_pred = distances[len(X_grid_train):, :len(X_grid_train)]
-    labels_test = [labels_train[np.argmin(distances_test_pred[i])] for i in range(len(X_grid_test))]
-
-    y_pred_train1 = np.array([1 if l == -1 else 0 for l in labels_train])
-    y_pred_test1 = np.array([1 if l == -1 else 0 for l in labels_test])
-    print("Finished path clustering")
-
-def calc_features(X, gsp_dists=[], gsp=False):
+def calc_features(X, gsp_dists=[], gsp=False, isCoordinates=False):
     feature_list = []
+    # FEATURES: MAYBE ADD TRIP TIME
     for i, x in enumerate(X):
         features = [x[0][0], x[0][1], x[-1][0], x[-1][1],
-            distance_of_trajectory(x)]
+                    distance_of_trajectory(np.array(x), isCoordinates=isCoordinates)]
         if gsp:
             features.append(gsp_dists[i])
         feature_list.append(features)
     return feature_list
 
 
-if method != "cluster":
+x_train_features = np.array(calc_features(x_init_train, isCoordinates=True))
+minmax_values = [(np.min(x_train_features[:, j]), np.max(
+    x_train_features[:, j])) for j in range(5)]
+
+pickle.dump(minmax_values, open(dataset+"_minmax.pkl", "wb"))
+
+X_grid_train = []
+X_grid_test = []
+X_grid_manual = []
+for x in x_train:
+    X_grid_train.append(scaler.trajectory_to_grid(x, grid_scale))
+print("Average length of size " + str(grid_scale) + " grid cell sequences:",
+      average_length_of_sequences(X_grid_train))
+
+gsp = GSPModule()
+if method in ["svm", "both"] and do_gsp:
+    gsp.find_frequent_subsequences(
+        X_grid_train+X_grid_test+X_grid_manual, gsp_support, True)
+
+for x in x_test:
+    X_grid_test.append(scaler.trajectory_to_grid(x, grid_scale))
+
+for x in manual_outliers:
+    X_grid_manual.append(scaler.trajectory_to_grid(x, grid_scale))
+
+if method in ["clustering", "both"]:
+    distances = calculate_distances(X_grid_train+X_grid_test+X_grid_manual)
+    distances_train = distances[:len(X_grid_train), :len(X_grid_train)]
+
+    dbscan = DBSCAN(eps=eps, metric="precomputed",
+                    n_jobs=-1, min_samples=minPts)
+    labels_train = dbscan.fit_predict(distances_train)
+
+    distances_test_pred = distances[len(X_grid_train):len(
+        X_grid_train)+len(X_grid_test), :len(X_grid_train)]
+    distances_manual_pred = distances[len(
+        X_grid_train)+len(X_grid_test):, :len(X_grid_train)]
+    labels_test = [labels_train[np.argmin(
+        distances_test_pred[i])] for i in range(len(X_grid_test))]
+    labels_manual = [labels_train[np.argmin(
+        distances_manual_pred[i])] for i in range(len(X_grid_manual))]
+
+    y_pred_train1 = np.array([1 if l == -1 else 0 for l in labels_train])
+    y_pred_test1 = np.array([1 if l == -1 else 0 for l in labels_test])
+    y_pred_manual1 = np.array([1 if l == -1 else 0 for l in labels_manual])
+    print("Finished path clustering")
+
+if method in ["svm", "both"]:
     gsp_dists_train = []
     gsp_dists_test = []
+    gsp_dists_manual = []
     if do_gsp:
         gsp_dists_train = gsp.deviation_from_frequent(X_grid_train)
         gsp_dists_test = gsp.deviation_from_frequent(X_grid_test)
-    
+        gsp_dists_manual = gsp.deviation_from_frequent(X_grid_manual)
+
     X_features_train = calc_features(x_train, gsp_dists_train, do_gsp)
     X_features_test = calc_features(x_test, gsp_dists_test, do_gsp)
-    
+    X_features_manual = calc_features(
+        manual_outliers, gsp_dists_manual, do_gsp)
+
     minmax = MinMaxScaler()
     X_features_train = minmax.fit_transform(X_features_train)
     X_features_test = minmax.transform(X_features_test)
+    if dataset == "cyprus":
+        X_features_manual = minmax.transform(X_features_manual)
 
     svm = SVC(C=C, gamma=gamma, kernel=kernel)
     svm.fit(X_features_train, y_train)
     y_pred_train2 = svm.predict(X_features_train)
     y_pred_test2 = svm.predict(X_features_test)
+    if dataset == "cyprus":
+        y_pred_manual2 = svm.predict(X_features_manual)
 
     print("Finished feature training")
 
 if method == "both":
-    y_pred_train_concat = np.concatenate((y_pred_train1.reshape((-1, 1)), y_pred_train2.reshape((-1, 1))), axis=1)
-    y_pred_test_concat = np.concatenate((y_pred_test1.reshape((-1, 1)), y_pred_test2.reshape((-1, 1))), axis=1)
+    y_pred_train_concat = np.concatenate(
+        (y_pred_train1.reshape((-1, 1)), y_pred_train2.reshape((-1, 1))), axis=1)
+    y_pred_test_concat = np.concatenate(
+        (y_pred_test1.reshape((-1, 1)), y_pred_test2.reshape((-1, 1))), axis=1)
+    if dataset == "cyprus":
+        y_pred_manual_concat = np.concatenate(
+            (y_pred_manual1.reshape((-1, 1)), y_pred_manual2.reshape((-1, 1))), axis=1)
     logreg = LogisticRegression()
     logreg.fit(y_pred_train_concat, y_train)
     y_pred_train = logreg.predict(y_pred_train_concat)
     y_pred_test = logreg.predict(y_pred_test_concat)
-    print(logreg.coef_) 
-elif method == "cluster":
+    if dataset == "cyprus":
+        y_pred_manual = logreg.predict(y_pred_manual_concat)
+    print(logreg.coef_)
+elif method == "clustering":
     y_pred_train = y_pred_train1
     y_pred_test = y_pred_test1
-else:
+    if dataset == "cyprus":
+        y_pred_manual = y_pred_manual1
+else:  # SVM
     y_pred_train = y_pred_train2
     y_pred_test = y_pred_test2
+    if dataset == "cyprus":
+        y_pred_manual = y_pred_manual2
 
 print("Running time:", round(perf_counter()-t, 1), "seconds")
 print("Train accuracy score:", round(accuracy_score(y_train, y_pred_train), 4))
@@ -170,10 +223,14 @@ print("Train F1 score:", round(f1_score(y_train, y_pred_train, average="macro"),
 print("Test accuracy score:", round(accuracy_score(y_test, y_pred_test), 4))
 print("Test F1 score:", round(f1_score(y_test, y_pred_test, average="macro"), 4))
 print(confusion_matrix(y_test, y_pred_test))
+if dataset == "cyprus" and len(manual_outliers) > 0:
+    print(y_pred_manual)
+    print("Percentage of manual outliers found by the system: {pct}%".format(
+        pct=100*len([y for y in y_pred_manual if y == 1])/len(y_pred_manual)))
 
-if method != "cluster":
+if method != "clustering":
     output = []
     for i, x in enumerate(x_init_test):
         output.append([X_features_test[i], x_init_test[i], y_pred_test[i]])
-    pickle.dump(output, open(f"trajectory_features_labeled_{dataset}.pkl", "wb"))
-
+    pickle.dump(output, open(
+        f"trajectory_features_labeled_{dataset}.pkl", "wb"))
