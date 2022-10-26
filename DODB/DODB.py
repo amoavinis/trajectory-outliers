@@ -22,7 +22,7 @@ parser.add_argument("--seed", default="999")
 args = parser.parse_args()
 
 dataset = args.dataset
-W = int(args.W)
+W = float(args.W)
 D0 = int(args.D0)
 D1 = int(args.D1)
 seed = int(args.seed)

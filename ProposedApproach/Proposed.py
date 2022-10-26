@@ -10,7 +10,6 @@ from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
 import numpy as np
 import pickle
 import argparse
-from tqdm import tqdm
 from time import perf_counter
 from numba import njit
 import warnings
@@ -49,6 +48,8 @@ parser.add_argument("--dataset",
                     default="geolife")
 parser.add_argument("--G", help="Specify the grid size", default="40")
 parser.add_argument("--eps", help="Specify the eps", default="1.5")
+parser.add_argument(
+    "--minPts", help="The DBSCAN minPts parameter.", default="2")
 parser.add_argument("--C", help="The C parameter.", default="8000")
 parser.add_argument("--gamma", help="The gamma parameter.", default="scale")
 parser.add_argument("--kernel", help="The SVM kernel.", default="rbf")
@@ -61,6 +62,7 @@ args = parser.parse_args()
 dataset = args.dataset
 grid_scale = int(args.G)
 eps = float(args.eps)
+minPts = int(args.minPts)
 C = int(args.C)
 gamma = args.gamma
 kernel = args.kernel
@@ -72,7 +74,12 @@ seed = int(args.seed)
 data_file = "trajectories_labeled_" + dataset + ".pkl"
 data = pickle.load(open(data_file, "rb"))
 
-manual_outliers = pickle.load(open("manual_outliers.pkl", "rb"))
+manual_outliers = []
+if dataset == "cyprus":
+    try:
+        manual_outliers = pickle.load(open("manual_outliers.pkl", "rb"))
+    except:
+        pass
 
 X_init = [[p[:2] for p in d[0]] for d in data]
 y = np.array([d[1] for d in data])
@@ -92,7 +99,9 @@ scaler.fit(points)
 
 x_train = [scaler.transform_trajectory(x) for x in x_init_train]
 x_test = [scaler.transform_trajectory(x) for x in x_init_test]
-manual_outliers = [scaler.transform_trajectory(x) for x in manual_outliers]
+if dataset == "cyprus":
+    manual_outliers = [scaler.transform_trajectory(x) for x in manual_outliers]
+
 
 def calc_features(X, gsp_dists=[], gsp=False, isCoordinates=False):
     feature_list = []
@@ -122,7 +131,8 @@ print("Average length of size " + str(grid_scale) + " grid cell sequences:",
 
 gsp = GSPModule()
 if method in ["svm", "both"] and do_gsp:
-    gsp.find_frequent_subsequences(X_grid_train+X_grid_test+X_grid_manual, gsp_support, True)
+    gsp.find_frequent_subsequences(
+        X_grid_train+X_grid_test+X_grid_manual, gsp_support, True)
 
 for x in x_test:
     X_grid_test.append(scaler.trajectory_to_grid(x, grid_scale))
@@ -130,15 +140,18 @@ for x in x_test:
 for x in manual_outliers:
     X_grid_manual.append(scaler.trajectory_to_grid(x, grid_scale))
 
-if method in ["cluster", "both"]:
+if method in ["clustering", "both"]:
     distances = calculate_distances(X_grid_train+X_grid_test+X_grid_manual)
     distances_train = distances[:len(X_grid_train), :len(X_grid_train)]
 
-    dbscan = DBSCAN(eps=eps, metric="precomputed", n_jobs=-1, min_samples=2)
+    dbscan = DBSCAN(eps=eps, metric="precomputed",
+                    n_jobs=-1, min_samples=minPts)
     labels_train = dbscan.fit_predict(distances_train)
 
-    distances_test_pred = distances[len(X_grid_train):len(X_grid_train)+len(X_grid_test), :len(X_grid_train)]
-    distances_manual_pred = distances[len(X_grid_train)+len(X_grid_test):, :len(X_grid_train)]
+    distances_test_pred = distances[len(X_grid_train):len(
+        X_grid_train)+len(X_grid_test), :len(X_grid_train)]
+    distances_manual_pred = distances[len(
+        X_grid_train)+len(X_grid_test):, :len(X_grid_train)]
     labels_test = [labels_train[np.argmin(
         distances_test_pred[i])] for i in range(len(X_grid_test))]
     labels_manual = [labels_train[np.argmin(
@@ -166,13 +179,15 @@ if method in ["svm", "both"]:
     minmax = MinMaxScaler()
     X_features_train = minmax.fit_transform(X_features_train)
     X_features_test = minmax.transform(X_features_test)
-    X_features_manual = minmax.transform(X_features_manual)
+    if dataset == "cyprus":
+        X_features_manual = minmax.transform(X_features_manual)
 
     svm = SVC(C=C, gamma=gamma, kernel=kernel)
     svm.fit(X_features_train, y_train)
     y_pred_train2 = svm.predict(X_features_train)
     y_pred_test2 = svm.predict(X_features_test)
-    y_pred_manual2 = svm.predict(X_features_manual)
+    if dataset == "cyprus":
+        y_pred_manual2 = svm.predict(X_features_manual)
 
     print("Finished feature training")
 
@@ -181,22 +196,26 @@ if method == "both":
         (y_pred_train1.reshape((-1, 1)), y_pred_train2.reshape((-1, 1))), axis=1)
     y_pred_test_concat = np.concatenate(
         (y_pred_test1.reshape((-1, 1)), y_pred_test2.reshape((-1, 1))), axis=1)
-    y_pred_manual_concat = np.concatenate(
-        (y_pred_manual1.reshape((-1, 1)), y_pred_manual2.reshape((-1, 1))), axis=1)
+    if dataset == "cyprus":
+        y_pred_manual_concat = np.concatenate(
+            (y_pred_manual1.reshape((-1, 1)), y_pred_manual2.reshape((-1, 1))), axis=1)
     logreg = LogisticRegression()
     logreg.fit(y_pred_train_concat, y_train)
     y_pred_train = logreg.predict(y_pred_train_concat)
     y_pred_test = logreg.predict(y_pred_test_concat)
-    y_pred_manual = logreg.predict(y_pred_manual_concat)
+    if dataset == "cyprus":
+        y_pred_manual = logreg.predict(y_pred_manual_concat)
     print(logreg.coef_)
-elif method == "cluster":
+elif method == "clustering":
     y_pred_train = y_pred_train1
     y_pred_test = y_pred_test1
-    y_pred_manual = y_pred_manual1
-else: #SVM
+    if dataset == "cyprus":
+        y_pred_manual = y_pred_manual1
+else:  # SVM
     y_pred_train = y_pred_train2
     y_pred_test = y_pred_test2
-    y_pred_manual = y_pred_manual2
+    if dataset == "cyprus":
+        y_pred_manual = y_pred_manual2
 
 print("Running time:", round(perf_counter()-t, 1), "seconds")
 print("Train accuracy score:", round(accuracy_score(y_train, y_pred_train), 4))
@@ -204,10 +223,12 @@ print("Train F1 score:", round(f1_score(y_train, y_pred_train, average="macro"),
 print("Test accuracy score:", round(accuracy_score(y_test, y_pred_test), 4))
 print("Test F1 score:", round(f1_score(y_test, y_pred_test, average="macro"), 4))
 print(confusion_matrix(y_test, y_pred_test))
-print("Percentage of manual outliers found by the system: {pct}%".format(
-    pct=100*len([y for y in y_pred_manual if y == 1])/len(y_pred_manual)))
+if dataset == "cyprus" and len(manual_outliers) > 0:
+    print(y_pred_manual)
+    print("Percentage of manual outliers found by the system: {pct}%".format(
+        pct=100*len([y for y in y_pred_manual if y == 1])/len(y_pred_manual)))
 
-if method != "cluster":
+if method != "clustering":
     output = []
     for i, x in enumerate(x_init_test):
         output.append([X_features_test[i], x_init_test[i], y_pred_test[i]])

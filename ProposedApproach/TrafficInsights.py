@@ -1,13 +1,26 @@
 from matplotlib import pyplot as plt
+from matplotlib import colors
 import pickle
+import argparse
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from random import sample, seed
-from sklearn.cluster import KMeans, DBSCAN
+from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 seed(2)
 
-data = pickle.load(open("trajectory_features_labeled_cyprus.pkl", "rb"))
+parser = argparse.ArgumentParser(
+    description="Run traffic insights.")
+parser.add_argument("--dataset",
+                    help="Specify the dataset to use",
+                    default="geolife")
+parser.add_argument(
+    "--K", help="The K parameter of the K-Means algorithm.", default="5")
+args = parser.parse_args()
+dataset = args.dataset
+K = int(args.K)
+
+data = pickle.load(open("trajectory_features_labeled_"+dataset+".pkl", "rb"))
 
 X = [[d[0][0], d[0][1], d[0][2], d[0][3], d[0][4]] for d in data]
 paths = [d[1] for d in data]
@@ -18,6 +31,16 @@ knn_model.fit(X)
 _, neighbors = knn_model.kneighbors(X)
 outlier_indices = [i for i, x in enumerate(y) if x == 1]
 sampled = sample(outlier_indices, 10)
+
+if dataset == "cyprus":
+    manual_outliers = pickle.load(open("manual_outliers.pkl", "rb"))
+    cmap = colors.ListedColormap(np.random.rand(len(manual_outliers), 3))
+    for i in range(len(manual_outliers)):
+        plt.plot([p[0] for p in manual_outliers[i]], [p[1] for p in manual_outliers[i]], color=cmap.colors[i], label="Outlier "+str(i+1))
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
+    plt.legend()
+    plt.show()
 
 
 def plot_outlier(x, neighbors_dict):
@@ -54,17 +77,20 @@ def clustering(data, paths, e):
     plt.ylabel("Latitude")
     plt.legend()
     plt.show()
-    
+
     colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
     labels_used = set()
     for label in range(e):
-        class_label = [paths[i] for i in range(len(y_pred)) if y_pred[i] == label]
+        class_label = [paths[i]
+                       for i in range(len(y_pred)) if y_pred[i] == label]
         sample_limit = min(1000, len(class_label))
         for x in sample(class_label, sample_limit):
             if label in labels_used:
-                plt.plot([p[0] for p in x], [p[1] for p in x], colors[label%7])
+                plt.plot([p[0] for p in x], [p[1]
+                         for p in x], colors[label % 7])
             else:
-                plt.plot([p[0] for p in x], [p[1] for p in x], colors[label%7], label="Cluster "+str(label+1))
+                plt.plot([p[0] for p in x], [p[1] for p in x],
+                         colors[label % 7], label="Cluster "+str(label+1))
                 labels_used.add(label)
 
     plt.xlabel("Longitude")
@@ -83,15 +109,15 @@ for i in range(len(X)):
         inliers.append(X[i])
         inlier_paths.append(paths[i])
 inliers = np.array(inliers)
-cluster_ids = clustering(inliers, inlier_paths, 5)
+cluster_ids = clustering(inliers, inlier_paths, K)
 
 
 def normalizedToOriginal(min, max, value):
     return value*(max-min) + min
 
 
-minmax_values = pickle.load(open("cyprus_minmax.pkl", "rb"))
-for class_id in range(5):
+minmax_values = pickle.load(open(dataset+"_minmax.pkl", "rb"))
+for class_id in range(K):
     cluster_data = np.array(
         [x for i, x in enumerate(inliers) if cluster_ids[i] == class_id])
     print("Cluster " + str(class_id+1))
