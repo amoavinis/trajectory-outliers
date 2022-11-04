@@ -167,7 +167,7 @@ class Normalizer:
 data_prefixes = {
     "geolife": "Datasets/Geolife Trajectories 1.3/Data/",
     "thessaloniki": "Datasets/ThessalonikiDataset/",
-    "cyprus": "Istognosis Data/istognosis_data.json"
+    "cyprus": "Datasets/Istognosis/istognosis_data.json"
 }
 
 class Labeling:
