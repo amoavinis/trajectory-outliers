@@ -29,13 +29,31 @@ def hausdorff_dist(A, B):
             dist = minimum
     return dist
 
-
 @njit
-def calculate_distances(X):
+def dtw_distance(A, B):
+    if len(A) == 0 and len(B) == 0:
+        return 0
+    elif len(A) > 0 and len(B) == 0 or len(A) == 0 and len(B) > 0:
+        return 1000000
+    else:
+        a = A[-1]
+        b = B[-1]
+        d = np.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
+        min_value = min(dtw_distance(A[:-1], B[:-1]), dtw_distance(A[:-1], B), dtw_distance(A, B[:-1]))
+
+        return d + min_value
+
+def calculate_distances(X, distance_fn):
     distances = np.zeros((len(X), len(X)))
     for i in range(len(X)):
+        if i % 10 == 0:
+            print(round(100*i/len(X), 1), "%")
         for j in range(i + 1):
-            d = max(hausdorff_dist(X[i], X[j]), hausdorff_dist(X[j], X[i]))
+            d = 0
+            if distance_fn == "hausdorff":
+                d = max(hausdorff_dist(X[i], X[j]), hausdorff_dist(X[j], X[i]))
+            else:
+                d = dtw_distance(X[i], X[j])
             distances[i, j] = d
             distances[j, i] = d
     return distances
@@ -50,6 +68,7 @@ parser.add_argument("--G", help="Specify the grid size", default="40")
 parser.add_argument("--eps", help="Specify the eps", default="1.5")
 parser.add_argument(
     "--minPts", help="The DBSCAN minPts parameter.", default="2")
+parser.add_argument("--distance_fn", help="The distance function used for the path clustering method (hausdorff or dtw)", default="hausdorff")
 parser.add_argument("--C", help="The C parameter.", default="8000")
 parser.add_argument("--gamma", help="The gamma parameter.", default="scale")
 parser.add_argument("--kernel", help="The SVM kernel.", default="rbf")
@@ -63,6 +82,7 @@ dataset = args.dataset
 grid_scale = int(args.G)
 eps = float(args.eps)
 minPts = int(args.minPts)
+distance_fn = args.distance_fn
 C = int(args.C)
 gamma = args.gamma
 kernel = args.kernel
@@ -140,8 +160,23 @@ for x in x_test:
 for x in manual_outliers:
     X_grid_manual.append(scaler.trajectory_to_grid(x, grid_scale))
 
+def sample_trajectory(X, n):
+    if len(X) <= n:
+        return X
+    else:
+        res = []
+        for i in range(n):
+            index = round(i*len(X)/n)
+            if index == len(X):
+                index -= 1
+            res.append(X[index])
+        return res
+
 if method in ["clustering", "both"]:
-    distances = calculate_distances(X_grid_train+X_grid_test+X_grid_manual)
+    X_grid_train = [sample_trajectory(x, 6) for x in X_grid_train]
+    X_grid_test = [sample_trajectory(x, 6) for x in X_grid_test]
+    X_grid_manual = [sample_trajectory(x, 6) for x in X_grid_manual]
+    distances = calculate_distances(X_grid_train+X_grid_test+X_grid_manual, distance_fn)
     distances_train = distances[:len(X_grid_train), :len(X_grid_train)]
 
     dbscan = DBSCAN(eps=eps, metric="precomputed",
