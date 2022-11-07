@@ -1,0 +1,15 @@
+numpy
+gsppy
+hausdorff
+geopy
+sklearn
+numba
+gpxpy
+scipy
+fastcluster
+tqdm
+matplotlib
+polyline
+pandas
+networkx
+osmnx
