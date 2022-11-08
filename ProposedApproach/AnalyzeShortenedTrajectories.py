@@ -32,6 +32,9 @@ def analyze_angle_paths(X, threshold):
     print("Average length of sequences:", average_length_of_sequences(X_angle))
 
 if __name__ == '__main__':
+    # hardcoded values for the Beijing dataset
+    print("WARNING: hardcoded values for the Beijing dataset")
+
     data = pickle.load(open("trajectories_labeled_geolife.pkl", "rb"))
     X = [np.array(d[0]) for d in data]
 

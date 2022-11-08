@@ -2,6 +2,9 @@ import pickle
 from random import sample
 from matplotlib import pyplot as plt
 
+# hardcoded values for the Cyprus dataset
+print("WARNING: hardcoded values for the Cyprus dataset")
+
 data = pickle.load(open("trajectories_labeled_cyprus.pkl", "rb"))
 X = [[p[:2] for p in d[0]] for d in data]
 y = [d[1] for d in data]
