@@ -40,7 +40,7 @@ class GSPModule:
         distances = np.zeros((len(X), len(self.freq_subsequences)))
         for i in range(distances.shape[0]):
             for j in range(distances.shape[1]):
-                distances[i, j] = hausdorff_distance(X[i], self.freq_subsequences[j])
+                distances[i, j] = hausdorff_distance(np.array(X[i]), self.freq_subsequences[j])
 
         mins = np.amin(distances, axis=1)
 
