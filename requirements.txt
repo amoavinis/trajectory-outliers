@@ -13,3 +13,4 @@ polyline
 pandas
 networkx
 osmnx
+fastdtw

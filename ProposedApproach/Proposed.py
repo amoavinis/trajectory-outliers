@@ -1,3 +1,5 @@
+from math import ceil
+import os
 from GSP import GSPModule
 from Utils import average_length_of_sequences, distance_of_trajectory
 from CustomScaler import Scaler
@@ -10,6 +12,8 @@ from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
 import numpy as np
 import pickle
 import argparse
+from fastdtw import fastdtw
+from scipy.spatial.distance import euclidean
 from time import perf_counter
 from numba import njit
 import warnings
@@ -29,31 +33,49 @@ def hausdorff_dist(A, B):
             dist = minimum
     return dist
 
-@njit
-def dtw_distance(A, B):
-    if len(A) == 0 and len(B) == 0:
-        return 0
-    elif len(A) > 0 and len(B) == 0 or len(A) == 0 and len(B) > 0:
-        return 1000000
-    else:
-        a = A[-1]
-        b = B[-1]
-        d = np.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
-        min_value = min(dtw_distance(A[:-1], B[:-1]), dtw_distance(A[:-1], B), dtw_distance(A, B[:-1]))
 
-        return d + min_value
+@njit
+def euclidean1(a, b):
+    return np.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
+
+
+def dtw_dp(A, B):
+    memo = np.zeros((len(A), len(B)))
+    memo += 100000000
+    
+    def dtw(i, j):
+        if memo[i, j] < 100000000:
+            return memo[i, j]
+        elif i==0 and j==0:
+            memo[i, j] = 0
+            return 0
+        elif i>0 and j==0 or i==0 and j>0:
+            return memo[i, j]
+        else:
+            a = A[i]
+            b = B[j]
+            d = euclidean1(a, b)
+            min_value = min(dtw(i-1, j-1), dtw(i-1, j), dtw(i, j-1))
+            
+            memo[i, j] = d+min_value
+            return d + min_value
+            
+    return dtw(len(A)-1, len(B)-1)
+
 
 def calculate_distances(X, distance_fn):
     distances = np.zeros((len(X), len(X)))
     for i in range(len(X)):
-        if i % 10 == 0:
+        X[i] = np.array(X[i])
+    for i in range(len(X)):
+        if i % 200 == 0:
             print(round(100*i/len(X), 1), "%")
         for j in range(i + 1):
             d = 0
             if distance_fn == "hausdorff":
                 d = max(hausdorff_dist(X[i], X[j]), hausdorff_dist(X[j], X[i]))
             else:
-                d = dtw_distance(X[i], X[j])
+                d, _ = fastdtw(X[i], X[j], dist=euclidean)
             distances[i, j] = d
             distances[j, i] = d
     return distances
@@ -68,7 +90,8 @@ parser.add_argument("--G", help="Specify the grid size", default="40")
 parser.add_argument("--eps", help="Specify the eps", default="1.5")
 parser.add_argument(
     "--minPts", help="The DBSCAN minPts parameter.", default="2")
-parser.add_argument("--distance_fn", help="The distance function used for the path clustering method (hausdorff or dtw)", default="hausdorff")
+parser.add_argument(
+    "--distance_fn", help="The distance function used for the path clustering method (hausdorff or dtw)", default="hausdorff")
 parser.add_argument("--C", help="The C parameter.", default="8000")
 parser.add_argument("--gamma", help="The gamma parameter.", default="scale")
 parser.add_argument("--kernel", help="The SVM kernel.", default="rbf")
@@ -160,23 +183,39 @@ for x in x_test:
 for x in manual_outliers:
     X_grid_manual.append(scaler.trajectory_to_grid(x, grid_scale))
 
+
 def sample_trajectory(X, n):
-    if len(X) <= n:
-        return X
-    else:
-        res = []
-        for i in range(n):
-            index = round(i*len(X)/n)
-            if index == len(X):
-                index -= 1
-            res.append(X[index])
-        return res
+    X = np.array(X)
+    sampled = X[[round(i) for i in np.linspace(0, len(X)-1, num=n)]]
+    return sampled.tolist()
+
 
 if method in ["clustering", "both"]:
-    X_grid_train = [sample_trajectory(x, 6) for x in X_grid_train]
-    X_grid_test = [sample_trajectory(x, 6) for x in X_grid_test]
-    X_grid_manual = [sample_trajectory(x, 6) for x in X_grid_manual]
-    distances = calculate_distances(X_grid_train+X_grid_test+X_grid_manual, distance_fn)
+    if distance_fn == "dtw":
+        samples = ceil(average_length_of_sequences(X_grid_train)) + 1
+        X_grid_train = [sample_trajectory(x, samples) if len(
+            x) > samples else x for x in X_grid_train]
+        X_grid_test = [sample_trajectory(x, samples) if len(
+            x) > samples else x for x in X_grid_test]
+        X_grid_manual = [sample_trajectory(x, samples) if len(
+            x) > samples else x for x in X_grid_manual]
+
+    distances = []
+
+    """ try:
+        distances = pickle.load(open(dataset+'_'+distance_fn+'_'+'distances.pkl', 'rb'))
+    except:
+        distances = calculate_distances(X_grid_train+X_grid_test+X_grid_manual, distance_fn)
+        pickle.dump(distances, open(dataset+'_'+distance_fn+'_'+'distances.pkl', 'wb')) """
+
+    if False and dataset+'_'+distance_fn+'_'+'distances.pkl' in os.listdir():
+        distances = pickle.load(
+            open(dataset+'_'+distance_fn+'_'+'distances.pkl', 'rb'))
+    else:
+        distances = calculate_distances(
+            X_grid_train+X_grid_test+X_grid_manual, distance_fn)
+        pickle.dump(distances, open(
+            dataset+'_'+distance_fn+'_'+'distances.pkl', 'wb'))
     distances_train = distances[:len(X_grid_train), :len(X_grid_train)]
 
     dbscan = DBSCAN(eps=eps, metric="precomputed",
@@ -240,7 +279,7 @@ if method == "both":
     y_pred_test = logreg.predict(y_pred_test_concat)
     if dataset == "cyprus":
         y_pred_manual = logreg.predict(y_pred_manual_concat)
-    print(logreg.coef_)
+    # print(logreg.coef_)
 elif method == "clustering":
     y_pred_train = y_pred_train1
     y_pred_test = y_pred_test1
