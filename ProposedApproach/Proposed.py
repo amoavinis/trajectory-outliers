@@ -14,6 +14,7 @@ import pickle
 import argparse
 from fastdtw import fastdtw
 from scipy.spatial.distance import euclidean
+from hilbertcurve.hilbertcurve import HilbertCurve
 from time import perf_counter
 from numba import njit
 import warnings
@@ -34,48 +35,27 @@ def hausdorff_dist(A, B):
     return dist
 
 
-@njit
-def euclidean1(a, b):
-    return np.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
-
-
-def dtw_dp(A, B):
-    memo = np.zeros((len(A), len(B)))
-    memo += 100000000
-    
-    def dtw(i, j):
-        if memo[i, j] < 100000000:
-            return memo[i, j]
-        elif i==0 and j==0:
-            memo[i, j] = 0
-            return 0
-        elif i>0 and j==0 or i==0 and j>0:
-            return memo[i, j]
-        else:
-            a = A[i]
-            b = B[j]
-            d = euclidean1(a, b)
-            min_value = min(dtw(i-1, j-1), dtw(i-1, j), dtw(i, j-1))
-            
-            memo[i, j] = d+min_value
-            return d + min_value
-            
-    return dtw(len(A)-1, len(B)-1)
-
-
 def calculate_distances(X, distance_fn):
     distances = np.zeros((len(X), len(X)))
+    hilbert = HilbertCurve(8, 2)
+
     for i in range(len(X)):
         X[i] = np.array(X[i])
     for i in range(len(X)):
-        if i % 200 == 0:
-            print(round(100*i/len(X), 1), "%")
+        """ if i % 200 == 0:
+            print(round(100*i/len(X), 1), "%") """
         for j in range(i + 1):
             d = 0
             if distance_fn == "hausdorff":
                 d = max(hausdorff_dist(X[i], X[j]), hausdorff_dist(X[j], X[i]))
-            else:
+            elif distance_fn == "dtw":
                 d, _ = fastdtw(X[i], X[j], dist=euclidean)
+            elif distance_fn == "dtw_hilbert":
+                xh = hilbert.distances_from_points([p for p in X[i]])
+                yh = hilbert.distances_from_points([p for p in X[j]])
+                d, _ = fastdtw(xh, yh, dist=lambda p1, p2: abs(p1-p2))
+            else:
+                raise Exception("Incorrect distance metric")
             distances[i, j] = d
             distances[j, i] = d
     return distances
@@ -175,7 +155,7 @@ print("Average length of size " + str(grid_scale) + " grid cell sequences:",
 gsp = GSPModule()
 if method in ["svm", "both"] and do_gsp:
     gsp.find_frequent_subsequences(
-        X_grid_train+X_grid_test+X_grid_manual, gsp_support, True)
+        X_grid_train+X_grid_test+X_grid_manual, gsp_support, False)
 
 for x in x_test:
     X_grid_test.append(scaler.trajectory_to_grid(x, grid_scale))
@@ -191,7 +171,7 @@ def sample_trajectory(X, n):
 
 
 if method in ["clustering", "both"]:
-    if distance_fn == "dtw":
+    if distance_fn == "dtw" or distance_fn == "dtw_hilbert":
         samples = ceil(average_length_of_sequences(X_grid_train)) + 1
         X_grid_train = [sample_trajectory(x, samples) if len(
             x) > samples else x for x in X_grid_train]
@@ -202,20 +182,15 @@ if method in ["clustering", "both"]:
 
     distances = []
 
-    """ try:
-        distances = pickle.load(open(dataset+'_'+distance_fn+'_'+'distances.pkl', 'rb'))
-    except:
-        distances = calculate_distances(X_grid_train+X_grid_test+X_grid_manual, distance_fn)
-        pickle.dump(distances, open(dataset+'_'+distance_fn+'_'+'distances.pkl', 'wb')) """
-
-    if False and dataset+'_'+distance_fn+'_'+'distances.pkl' in os.listdir():
+    try:
         distances = pickle.load(
             open(dataset+'_'+distance_fn+'_'+'distances.pkl', 'rb'))
-    else:
+    except:
         distances = calculate_distances(
             X_grid_train+X_grid_test+X_grid_manual, distance_fn)
         pickle.dump(distances, open(
             dataset+'_'+distance_fn+'_'+'distances.pkl', 'wb'))
+
     distances_train = distances[:len(X_grid_train), :len(X_grid_train)]
 
     dbscan = DBSCAN(eps=eps, metric="precomputed",

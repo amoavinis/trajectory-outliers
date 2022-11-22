@@ -31,7 +31,7 @@ class GSPModule:
             output = GSP(stringified).search(t)
             for d in output:
                 frequent.extend(d.keys())
-            pickle.dump(frequent, open(f"freq_subs_{str(t).replace('.', '')}.pkl", "wb"))
+            #pickle.dump(frequent, open(f"freq_subs_{str(t).replace('.', '')}.pkl", "wb"))
         intified_freq = self.intify_grid_trajectories(frequent)
         
         self.freq_subsequences = intified_freq
