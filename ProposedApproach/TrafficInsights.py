@@ -1,5 +1,6 @@
 from matplotlib import pyplot as plt
 from matplotlib import colors
+from matplotlib.cm import get_cmap
 import pickle
 import argparse
 import numpy as np
@@ -40,13 +41,14 @@ sampled = sample(outlier_indices, 10)
 
 if plot_manual_outliers and dataset == "cyprus":
     manual_outliers = pickle.load(open("manual_outliers.pkl", "rb"))
-    cmap = colors.ListedColormap(np.random.rand(len(manual_outliers), 3))
+    hsv = get_cmap('hsv', 256)
+    cmap = colors.ListedColormap(hsv(np.linspace(0, 1, len(manual_outliers))))
     for i in range(len(manual_outliers)):
         plt.plot([p[0] for p in manual_outliers[i]], [
                  p[1] for p in manual_outliers[i]], color=cmap.colors[i], label="Outlier "+str(i+1))
     plt.xlabel("Longitude")
     plt.ylabel("Latitude")
-    plt.legend()
+    plt.legend(loc="upper left")
     plt.show()
 
 
