@@ -35,15 +35,15 @@ def hausdorff_dist(A, B):
     return dist
 
 
-def calculate_distances(X, distance_fn):
+def calculate_distances(X, distance_fn, verbose=False):
     distances = np.zeros((len(X), len(X)))
     hilbert = HilbertCurve(8, 2)
 
     for i in range(len(X)):
         X[i] = np.array(X[i])
     for i in range(len(X)):
-        """ if i % 200 == 0:
-            print(round(100*i/len(X), 1), "%") """
+        if i % 200 == 0 and verbose:
+            print(round(100*i/len(X), 1), "%")
         for j in range(i + 1):
             d = 0
             if distance_fn == "hausdorff":
@@ -187,7 +187,7 @@ if method in ["clustering", "both"]:
             open(dataset+'_'+distance_fn+'_'+'distances.pkl', 'rb'))
     except:
         distances = calculate_distances(
-            X_grid_train+X_grid_test+X_grid_manual, distance_fn)
+            X_grid_train+X_grid_test+X_grid_manual, distance_fn, verbose=False)
         pickle.dump(distances, open(
             dataset+'_'+distance_fn+'_'+'distances.pkl', 'wb'))
 
