@@ -5,6 +5,8 @@ This repository holds the code for the dissertation of Angelos Moavinis for the 
 
 In case you use anything from this work, please mention it in your work :-)
 
+Contact the author at `amoavinis@gmail.com` if you need any help with the code or the published documents.
+
 ## Usage guide
 You will need `python3` to be installed in your system, the code has been tested with Python version 3.10.6. Before execution, firstly run 
 ```
