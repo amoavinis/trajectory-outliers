@@ -71,7 +71,7 @@ parser.add_argument("--eps", help="Specify the eps", default="1.5")
 parser.add_argument(
     "--minPts", help="The DBSCAN minPts parameter.", default="2")
 parser.add_argument(
-    "--distance_fn", help="The distance function used for the path clustering method (hausdorff or dtw)", default="hausdorff")
+    "--distance_fn", help="The distance function used for the path clustering method (hausdorff, dtw or dtw_hilbert)", default="hausdorff")
 parser.add_argument("--C", help="The C parameter.", default="8000")
 parser.add_argument("--gamma", help="The gamma parameter.", default="scale")
 parser.add_argument("--kernel", help="The SVM kernel.", default="rbf")
