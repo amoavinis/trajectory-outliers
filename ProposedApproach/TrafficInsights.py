@@ -48,7 +48,7 @@ if plot_manual_outliers and dataset == "cyprus":
                  p[1] for p in manual_outliers[i]], color=cmap.colors[i], label="Outlier "+str(i+1))
     plt.xlabel("Longitude")
     plt.ylabel("Latitude")
-    plt.legend(loc="upper left")
+    plt.legend(loc="upper left", prop={'size': 18}, bbox_to_anchor=(1, 1.05))
     plt.show()
 
 
@@ -106,7 +106,7 @@ def clustering(data, paths, e):
 
     plt.xlabel("Longitude")
     plt.ylabel("Latitude")
-    plt.legend()
+    plt.legend(prop={'size': 20})
     plt.show()
 
     return y_pred
