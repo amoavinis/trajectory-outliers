@@ -2,7 +2,7 @@
 python3 Proposed/AutomaticLabeling.py --dataset geolife
 
 # CYPRUS AUTO LABELING
-python3 Proposed/AutomaticLabeling.py --dataset geolife --G 10
+python3 Proposed/AutomaticLabeling.py --dataset cyprus --G 10
 
 # GEOLIFE CLASSIFICATION
 python3 TOP/runTOP.py --dataset geolife
