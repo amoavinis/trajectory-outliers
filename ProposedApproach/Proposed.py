@@ -153,7 +153,7 @@ print("Average length of size " + str(grid_scale) + " grid cell sequences:",
       average_length_of_sequences(X_grid_train))
 
 gsp = GSPModule()
-if method in ["svm", "both"] and do_gsp:
+if method in ["svm", "both", "bothOr"] and do_gsp:
     gsp.find_frequent_subsequences(
         X_grid_train+X_grid_test+X_grid_manual, gsp_support, False)
 
@@ -170,7 +170,7 @@ def sample_trajectory(X, n):
     return sampled.tolist()
 
 
-if method in ["clustering", "both"]:
+if method in ["clustering", "both", "bothOr"]:
     if distance_fn == "dtw" or distance_fn == "dtw_hilbert":
         samples = ceil(average_length_of_sequences(X_grid_train)) + 1
         X_grid_train = [sample_trajectory(x, samples) if len(
@@ -211,7 +211,7 @@ if method in ["clustering", "both"]:
     y_pred_manual1 = np.array([1 if l == -1 else 0 for l in labels_manual])
     print("Finished path clustering")
 
-if method in ["svm", "both"]:
+if method in ["svm", "both", "bothOr"]:
     gsp_dists_train = []
     gsp_dists_test = []
     gsp_dists_manual = []
@@ -255,6 +255,11 @@ if method == "both":
     if dataset == "cyprus":
         y_pred_manual = logreg.predict(y_pred_manual_concat)
     # print(logreg.coef_)
+elif method == "bothOr":
+    y_pred_train = np.logical_or(y_pred_train1, y_pred_train2)
+    y_pred_test = np.logical_or(y_pred_test1, y_pred_test2)
+    if dataset == "cyprus":
+        y_pred_manual = np.logical_or(y_pred_manual1, y_pred_manual2)
 elif method == "clustering":
     y_pred_train = y_pred_train1
     y_pred_test = y_pred_test1
