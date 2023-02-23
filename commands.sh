@@ -13,6 +13,7 @@ python3 ProposedApproach/Proposed.py --dataset geolife --method clustering --min
 python3 ProposedApproach/Proposed.py --dataset geolife --method svm --do_gsp 0
 python3 ProposedApproach/Proposed.py --dataset geolife --method svm --do_gsp 1 --G 20
 python3 ProposedApproach/Proposed.py --dataset geolife --method both --minPts 20 --distance_fn hausdorff --G 20 --do_gsp 1
+python3 ProposedApproach/Proposed.py --dataset geolife --method bothOr --minPts 20 --distance_fn hausdorff --G 20 --do_gsp 1
 
 # CYPRUS CLASSIFICATION
 python3 TOP/runTOP.py --dataset cyprus --seqGap 6 --minSup 3
@@ -23,3 +24,4 @@ python3 ProposedApproach/Proposed.py --dataset cyprus --method clustering --minP
 python3 ProposedApproach/Proposed.py --dataset cyprus --method svm --do_gsp 0
 python3 ProposedApproach/Proposed.py --dataset cyprus --method svm --do_gsp 1
 python3 ProposedApproach/Proposed.py --dataset cyprus --method both --minPts 30 --distance_fn hausdorff --G 40 --do_gsp 1
+python3 ProposedApproach/Proposed.py --dataset cyprus --method bothOr --minPts 30 --distance_fn hausdorff --G 40 --do_gsp 1

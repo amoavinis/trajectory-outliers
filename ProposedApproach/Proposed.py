@@ -75,7 +75,7 @@ parser.add_argument(
 parser.add_argument("--C", help="The C parameter.", default="8000")
 parser.add_argument("--gamma", help="The gamma parameter.", default="scale")
 parser.add_argument("--kernel", help="The SVM kernel.", default="rbf")
-parser.add_argument("--method", help="clustering, svm or both", default="svm")
+parser.add_argument("--method", help="clustering, svm, both or bothOr", default="svm")
 parser.add_argument("--do_gsp", help="0 or 1", default="0")
 parser.add_argument("--gsp_support", default="0.05")
 parser.add_argument("--seed", default="999")
