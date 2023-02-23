@@ -256,10 +256,10 @@ if method == "both":
         y_pred_manual = logreg.predict(y_pred_manual_concat)
     # print(logreg.coef_)
 elif method == "bothOr":
-    y_pred_train = np.logical_or(y_pred_train1, y_pred_train2)
-    y_pred_test = np.logical_or(y_pred_test1, y_pred_test2)
+    y_pred_train = np.logical_or(y_pred_train1, y_pred_train2).astype(int)
+    y_pred_test = np.logical_or(y_pred_test1, y_pred_test2).astype(int)
     if dataset == "cyprus":
-        y_pred_manual = np.logical_or(y_pred_manual1, y_pred_manual2)
+        y_pred_manual = np.logical_or(y_pred_manual1, y_pred_manual2).astype(int)
 elif method == "clustering":
     y_pred_train = y_pred_train1
     y_pred_test = y_pred_test1
