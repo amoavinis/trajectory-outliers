@@ -1,0 +1,34 @@
+True outlier found at index: 0
+True outlier found at index: 1
+True outlier found at index: 2
+True outlier found at index: 3
+True outlier missed at index: 4
+Grid length: 1
+True outlier found at index: 5
+True outlier found at index: 6
+True outlier missed at index: 7
+Grid length: 1
+True outlier found at index: 8
+True outlier found at index: 9
+True outlier found at index: 10
+True outlier found at index: 11
+True outlier found at index: 12
+True outlier found at index: 13
+True outlier missed at index: 14
+Grid length: 17
+True outlier missed at index: 15
+Grid length: 1
+True outlier found at index: 16
+True outlier found at index: 17
+True outlier found at index: 18
+True outlier found at index: 19
+True outlier found at index: 20
+True outlier found at index: 21
+True outliers missed: 4
+0.8181818181818182
+
+['deryneia-limassol.gpx', 'deryneia-nicosia.gpx', 'deryneia-paphos.gpx', 'deryneia_long.gpx', 'deryneia_short.gpx', 'larnaca-paphos.gpx', 'larnaca_long.gpx', 'larnaca_short.gpx', 'limassol-deryneia.gpx', 'limassol-paphos.gpx', 'limassol_long.gpx', 'limassol_short.gpx', 'nicosia-deryneia.gpx', 'nicosia-paphos.gpx', 'nicosia_long.gpx', 'nicosia_short.gpx', 'paphos-deryneia.gpx', 'paphos-larnaca.gpx', 'paphos-limassol.gpx', 'paphos-nicosia.gpx', 'paphos_long.gpx', 'paphos_short.gpx']
+
+MISSES: DERYNEIA SHORT, LARNACA SHORT, NICOSIA LONG, NICOSIA SHORT
+
+
